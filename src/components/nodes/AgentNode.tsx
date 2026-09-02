@@ -2,16 +2,16 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { WorkflowNode } from '../../lib/types';
 
 const KIND_COLORS: Record<string, string> = {
-  start: '#16a34a',
-  agent: '#7c3aed',
-  subagent: '#a78bfa',
-  tool: '#d97706',
-  decision: '#db2777',
-  end: '#dc2626',
+  start: '#0f766e',
+  agent: '#b1490f',
+  subagent: '#d98a52',
+  tool: '#4b6a8a',
+  decision: '#8a4a6b',
+  end: '#8f2d20',
 };
 
 export default function AgentNode({ data, selected }: NodeProps<WorkflowNode>) {
-  const color = KIND_COLORS[data.kind] ?? '#6366f1';
+  const color = KIND_COLORS[data.kind] ?? '#b1490f';
 
   return (
     <div
