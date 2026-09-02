@@ -14,6 +14,7 @@ import NodeInspector from './components/NodeInspector';
 import VoicePanel from './components/VoicePanel';
 import ToastStack from './components/ToastStack';
 import ConfirmModal from './components/ConfirmModal';
+import OnboardingHint from './components/OnboardingHint';
 import { exportGraph, importGraph, loadFromLocalStorage, saveToLocalStorage } from './lib/graphStorage';
 import { useToasts } from './lib/useToasts';
 import type { WorkflowGraph, WorkflowNode, WorkflowNodeData } from './lib/types';
@@ -138,6 +139,7 @@ function App() {
   );
 
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
+  const showOnboarding = nodes.length === 1 && edges.length === 0 && !voiceOpen;
 
   return (
     <div className="app">
@@ -157,7 +159,9 @@ function App() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={(node) => setSelectedId(node?.id ?? null)}
-        />
+        >
+          {showOnboarding && <OnboardingHint />}
+        </Canvas>
         <NodeInspector node={selectedNode} onChange={handleNodeDataChange} onDelete={handleDeleteNode} />
       </div>
       {voiceOpen && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}

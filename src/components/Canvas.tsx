@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import {
   Controls,
   MiniMap,
@@ -19,6 +19,7 @@ interface CanvasProps {
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   onNodeClick: (node: WorkflowNode | null) => void;
+  children?: ReactNode;
 }
 
 export default function Canvas({
@@ -28,6 +29,7 @@ export default function Canvas({
   onEdgesChange,
   onConnect,
   onNodeClick,
+  children,
 }: CanvasProps) {
   const nodeTypes = useMemo(() => ({ agent: AgentNode }), []);
 
@@ -54,6 +56,7 @@ export default function Canvas({
           nodeStrokeColor="var(--border)"
         />
       </ReactFlow>
+      {children}
     </div>
   );
 }

@@ -99,6 +99,7 @@
   flex: 1;
   min-width: 0;
   background: var(--bg);
+  position: relative;
 }
 
 .canvas-wrap .react-flow__controls {
@@ -597,4 +598,54 @@
 
 .modal-actions button.danger:hover {
   filter: brightness(1.1);
+}
+
+.onboarding-hint {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 260px;
+  animation: hint-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.3s backwards;
+  pointer-events: none;
+}
+
+.onboarding-arrow {
+  font-size: 22px;
+  color: var(--accent);
+  animation: hint-bounce 1.6s ease-in-out infinite;
+}
+
+.onboarding-hint p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.onboarding-hint strong {
+  color: var(--text-h);
+}
+
+@keyframes hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hint-bounce {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(3px, -4px);
+  }
 }
