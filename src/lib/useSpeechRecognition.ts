@@ -41,11 +41,10 @@ export function useSpeechRecognition() {
     };
 
     // Browsers end recognition after a short silence even with continuous:true.
-    // Restart automatically unless the user explicitly stopped or a fatal error occurred.
+    // Restart the same instance unless the user explicitly stopped or a fatal error occurred.
     recognition.onend = () => {
       if (shouldListenRef.current) {
-        recognitionRef.current = createRecognition();
-        recognitionRef.current?.start();
+        recognition.start();
       } else {
         setListening(false);
       }
