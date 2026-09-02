@@ -52,7 +52,7 @@ export default function VoicePanel({ onCompile, onClose }: VoicePanelProps) {
         {supported ? (
           <div className="voice-controls">
             <button onClick={listening ? stop : start} className={listening ? 'danger' : ''}>
-              {listening ? '● Listening… (click to stop)' : '🎤 Start listening'}
+              {listening ? 'Listening… (click to stop)' : '🎤 Start listening'}
             </button>
             <button
               onClick={() => {

@@ -45,9 +45,16 @@ export default function Canvas({
         onPaneClick={() => onNodeClick(null)}
         fitView
       >
-        <Background />
+        <Background color="var(--border)" gap={20} />
         <Controls />
-        <MiniMap pannable zoomable />
+        <MiniMap
+          pannable
+          zoomable
+          style={{ background: 'var(--code-bg)', border: '1px solid var(--border)' }}
+          maskColor="var(--accent-bg)"
+          nodeColor="var(--accent-border)"
+          nodeStrokeColor="var(--border)"
+        />
       </ReactFlow>
     </div>
   );

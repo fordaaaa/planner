@@ -2,12 +2,12 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { WorkflowNode } from '../../lib/types';
 
 const KIND_COLORS: Record<string, string> = {
-  start: '#22c55e',
-  agent: '#6366f1',
-  subagent: '#818cf8',
-  tool: '#f59e0b',
-  decision: '#ec4899',
-  end: '#ef4444',
+  start: '#16a34a',
+  agent: '#7c3aed',
+  subagent: '#a78bfa',
+  tool: '#d97706',
+  decision: '#db2777',
+  end: '#dc2626',
 };
 
 export default function AgentNode({ data, selected }: NodeProps<WorkflowNode>) {
@@ -16,7 +16,10 @@ export default function AgentNode({ data, selected }: NodeProps<WorkflowNode>) {
   return (
     <div
       className="agent-node"
-      style={{ borderColor: selected ? color : 'var(--node-border)' }}
+      style={{
+        borderColor: selected ? color : 'var(--node-border)',
+        boxShadow: selected ? `var(--shadow), 0 0 0 3px color-mix(in srgb, ${color} 25%, transparent)` : undefined,
+      }}
     >
       <Handle type="target" position={Position.Top} />
       <div className="agent-node-badge" style={{ background: color }}>

@@ -3,86 +3,143 @@
   flex-direction: column;
   height: 100svh;
   width: 100%;
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: normal;
+  color: var(--text);
+  background: var(--bg);
 }
 
 .toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border);
   gap: 16px;
+  background: var(--bg);
+  z-index: 20;
 }
 
 .toolbar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
   color: var(--text-h);
+}
+
+.toolbar-title::before {
+  content: '';
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-border));
+  box-shadow: 0 2px 6px var(--accent-bg);
 }
 
 .toolbar-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .toolbar-actions button {
   font: inherit;
-  font-size: 14px;
-  padding: 6px 12px;
-  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 13px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-h);
   cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 
 .toolbar-actions button:hover {
   border-color: var(--accent-border);
+  background: var(--accent-bg);
 }
 
 .toolbar-actions button.danger {
   color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.4);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.toolbar-actions button.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.5);
 }
 
 .toolbar-actions button.active {
-  border-color: #6366f1;
-  color: #6366f1;
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--accent);
 }
 
 .app-body {
   flex: 1;
   display: flex;
   min-height: 0;
+  position: relative;
 }
 
 .canvas-wrap {
   flex: 1;
   min-width: 0;
+  background: var(--bg);
+}
+
+.canvas-wrap .react-flow__controls {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.canvas-wrap .react-flow__controls-button {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  fill: var(--text-h);
+}
+
+.canvas-wrap .react-flow__controls-button:hover {
+  background: var(--accent-bg);
 }
 
 .inspector {
-  width: 280px;
+  width: 288px;
   flex-shrink: 0;
   border-left: 1px solid var(--border);
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   overflow-y: auto;
   text-align: left;
+  background: var(--bg);
 }
 
 .inspector h3 {
   margin: 0;
-  font-size: 16px;
-  color: var(--text-h);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
 }
 
 .inspector label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--text);
 }
 
@@ -91,47 +148,68 @@
 .inspector textarea {
   font: inherit;
   font-size: 14px;
-  padding: 6px 8px;
-  border-radius: 6px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  padding: 8px 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-h);
   resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.inspector input:focus,
+.inspector select:focus,
+.inspector textarea:focus {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
 .inspector button.danger {
   margin-top: auto;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
   background: transparent;
   color: #ef4444;
+  font-weight: 500;
   cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.inspector button.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .inspector-empty {
   color: var(--text);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .agent-node {
-  border: 2px solid var(--node-border, var(--border));
-  border-radius: 8px;
+  border: 1.5px solid var(--node-border, var(--border));
+  border-radius: 12px;
   background: var(--bg);
-  padding: 8px 12px;
-  min-width: 150px;
+  padding: 10px 14px;
+  min-width: 160px;
   text-align: left;
+  box-shadow: var(--shadow);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .agent-node-badge {
   display: inline-block;
   font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: #fff;
-  padding: 1px 6px;
-  border-radius: 4px;
-  margin-bottom: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-bottom: 6px;
 }
 
 .agent-node-label {
@@ -148,31 +226,45 @@
 
 .voice-panel {
   position: absolute;
-  left: 16px;
-  right: 296px;
-  bottom: 16px;
+  left: 20px;
+  right: 308px;
+  bottom: 20px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 14px;
   background: var(--bg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow);
   z-index: 10;
+  overflow: hidden;
 }
 
 .voice-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
+  font-weight: 500;
   color: var(--text);
+  background: var(--accent-bg);
+}
+
+.voice-panel-header button {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
 }
 
 .voice-panel-body {
-  padding: 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .voice-controls {
@@ -180,11 +272,52 @@
   gap: 8px;
 }
 
+.voice-controls button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voice-controls button.danger {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.voice-controls button.danger::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ef4444;
+  animation: voice-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes voice-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
+}
+
 .voice-panel-body textarea {
   font: inherit;
   font-size: 14px;
-  padding: 8px;
-  border-radius: 6px;
+  padding: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--text-h);
@@ -193,33 +326,48 @@
 
 .voice-transcript {
   min-height: 48px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  font-size: 14px;
+  background: var(--code-bg);
+  font-family: var(--mono);
+  font-size: 13px;
   color: var(--text-h);
 }
 
 .voice-placeholder {
   color: var(--text);
+  font-family: var(--sans);
 }
 
 .voice-error {
   font-size: 13px;
   color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  padding: 8px 10px;
 }
 
 .voice-compile {
   align-self: flex-start;
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: 1px solid #6366f1;
-  background: #6366f1;
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
   color: #fff;
+  font-weight: 500;
   cursor: pointer;
+  box-shadow: 0 2px 8px var(--accent-bg);
+  transition: filter 0.15s ease;
+}
+
+.voice-compile:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 
 .voice-compile:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
