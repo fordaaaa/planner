@@ -5,6 +5,9 @@ export function isSpeechRecognitionSupported(): boolean {
 }
 
 const FATAL_ERRORS = new Set(['not-allowed', 'audio-capture', 'service-not-allowed']);
+const RESTART_DELAY_MS = 300;
+const RESTART_WINDOW_MS = 5000;
+const MAX_RESTARTS_IN_WINDOW = 5;
 
 export function useSpeechRecognition() {
   const [listening, setListening] = useState(false);
@@ -13,6 +16,8 @@ export function useSpeechRecognition() {
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const shouldListenRef = useRef(false);
+  const restartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const restartTimestampsRef = useRef<number[]>([]);
 
   const createRecognition = useCallback(() => {
     const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
@@ -40,14 +45,35 @@ export function useSpeechRecognition() {
       if (FATAL_ERRORS.has(event.error)) shouldListenRef.current = false;
     };
 
-    // Browsers end recognition after a short silence even with continuous:true.
-    // Restart the same instance unless the user explicitly stopped or a fatal error occurred.
+    // Browsers (macOS Chrome/Safari especially) end recognition after a short
+    // silence even with continuous:true. Restart on a short delay so the OS has
+    // time to release the mic — restarting synchronously throws InvalidStateError
+    // and can spiral into a tight restart loop. A sliding-window cap is a safety
+    // valve in case a browser keeps failing to actually start.
     recognition.onend = () => {
-      if (shouldListenRef.current) {
-        recognition.start();
-      } else {
+      if (!shouldListenRef.current) {
         setListening(false);
+        return;
       }
+
+      const now = Date.now();
+      restartTimestampsRef.current = restartTimestampsRef.current.filter((t) => now - t < RESTART_WINDOW_MS);
+      restartTimestampsRef.current.push(now);
+
+      if (restartTimestampsRef.current.length > MAX_RESTARTS_IN_WINDOW) {
+        shouldListenRef.current = false;
+        setListening(false);
+        setError('unstable');
+        return;
+      }
+
+      restartTimeoutRef.current = setTimeout(() => {
+        try {
+          recognition.start();
+        } catch {
+          // already starting/started — ignore, next onend will retry
+        }
+      }, RESTART_DELAY_MS);
     };
 
     return recognition;
@@ -56,6 +82,7 @@ export function useSpeechRecognition() {
   useEffect(() => {
     return () => {
       shouldListenRef.current = false;
+      if (restartTimeoutRef.current) clearTimeout(restartTimeoutRef.current);
       recognitionRef.current?.stop();
     };
   }, []);
@@ -67,6 +94,7 @@ export function useSpeechRecognition() {
       return;
     }
     setError(null);
+    restartTimestampsRef.current = [];
     shouldListenRef.current = true;
     recognitionRef.current = recognition;
     recognition.start();
@@ -75,6 +103,7 @@ export function useSpeechRecognition() {
 
   const stop = useCallback(() => {
     shouldListenRef.current = false;
+    if (restartTimeoutRef.current) clearTimeout(restartTimeoutRef.current);
     recognitionRef.current?.stop();
     setListening(false);
   }, []);

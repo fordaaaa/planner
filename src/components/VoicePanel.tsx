@@ -14,6 +14,8 @@ const MIC_ERROR_MESSAGES: Record<string, string> = {
   'audio-capture': 'No microphone found.',
   'no-speech': "Didn't catch that — try again.",
   'not-supported': 'Speech recognition is not available in this browser.',
+  unstable:
+    "This browser's speech recognition keeps restarting and failing — that's a known issue on some macOS builds. Try Chrome, or use the text box below instead.",
 };
 
 export default function VoicePanel({ onCompile, onClose }: VoicePanelProps) {
@@ -21,7 +23,8 @@ export default function VoicePanel({ onCompile, onClose }: VoicePanelProps) {
   const [manualText, setManualText] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const text = supported ? transcript : manualText;
+  const micUsable = supported && micError !== 'unstable';
+  const text = micUsable ? transcript : manualText;
 
   const preview = useMemo(() => {
     if (!text.trim()) return null;
@@ -49,7 +52,7 @@ export default function VoicePanel({ onCompile, onClose }: VoicePanelProps) {
       </div>
 
       <div className="voice-panel-body">
-        {supported ? (
+        {micUsable ? (
           <div className="voice-controls">
             <button onClick={listening ? stop : start} className={listening ? 'danger' : ''}>
               {listening ? 'Listening… (click to stop)' : '🎤 Start listening'}
