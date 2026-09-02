@@ -11,8 +11,9 @@ import {
 import Canvas from './components/Canvas';
 import Toolbar from './components/Toolbar';
 import NodeInspector from './components/NodeInspector';
+import VoicePanel from './components/VoicePanel';
 import { exportGraph, importGraph, loadFromLocalStorage, saveToLocalStorage } from './lib/graphStorage';
-import type { WorkflowNode, WorkflowNodeData } from './lib/types';
+import type { WorkflowGraph, WorkflowNode, WorkflowNodeData } from './lib/types';
 import './App.css';
 
 const STARTER_GRAPH: { nodes: WorkflowNode[]; edges: Edge[] } = {
@@ -37,6 +38,7 @@ function App() {
   const [nodes, setNodes] = useState<WorkflowNode[]>(STARTER_GRAPH.nodes);
   const [edges, setEdges] = useState<Edge[]>(STARTER_GRAPH.edges);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [voiceOpen, setVoiceOpen] = useState(false);
 
   useEffect(() => {
     const saved = loadFromLocalStorage();
@@ -111,6 +113,13 @@ function App() {
     }
   }, []);
 
+  const handleVoiceCompile = useCallback((graph: WorkflowGraph) => {
+    setNodes(graph.nodes);
+    setEdges(graph.edges);
+    setSelectedId(null);
+    setVoiceOpen(false);
+  }, []);
+
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
 
   return (
@@ -120,6 +129,8 @@ function App() {
         onExport={handleExport}
         onImport={handleImport}
         onClear={handleClear}
+        onToggleVoice={() => setVoiceOpen((v) => !v)}
+        voiceOpen={voiceOpen}
       />
       <div className="app-body">
         <Canvas
@@ -132,6 +143,7 @@ function App() {
         />
         <NodeInspector node={selectedNode} onChange={handleNodeDataChange} onDelete={handleDeleteNode} />
       </div>
+      {voiceOpen && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}
     </div>
   );
 }

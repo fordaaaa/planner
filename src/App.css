@@ -44,6 +44,11 @@
   border-color: rgba(239, 68, 68, 0.4);
 }
 
+.toolbar-actions button.active {
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
 .app-body {
   flex: 1;
   display: flex;
@@ -139,4 +144,82 @@
   font-size: 12px;
   color: var(--text);
   margin-top: 4px;
+}
+
+.voice-panel {
+  position: absolute;
+  left: 16px;
+  right: 296px;
+  bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 10;
+}
+
+.voice-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.voice-panel-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.voice-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.voice-panel-body textarea {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  resize: vertical;
+}
+
+.voice-transcript {
+  min-height: 48px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.voice-placeholder {
+  color: var(--text);
+}
+
+.voice-error {
+  font-size: 13px;
+  color: #ef4444;
+}
+
+.voice-compile {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid #6366f1;
+  background: #6366f1;
+  color: #fff;
+  cursor: pointer;
+}
+
+.voice-compile:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

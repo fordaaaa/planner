@@ -5,9 +5,11 @@ interface ToolbarProps {
   onExport: () => void;
   onImport: (file: File) => void;
   onClear: () => void;
+  onToggleVoice: () => void;
+  voiceOpen: boolean;
 }
 
-export default function Toolbar({ onAddNode, onExport, onImport, onClear }: ToolbarProps) {
+export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -15,6 +17,9 @@ export default function Toolbar({ onAddNode, onExport, onImport, onClear }: Tool
       <div className="toolbar-title">Planner</div>
       <div className="toolbar-actions">
         <button onClick={onAddNode}>+ Add node</button>
+        <button onClick={onToggleVoice} className={voiceOpen ? 'active' : ''}>
+          🎤 Voice build
+        </button>
         <button onClick={onExport}>Export JSON</button>
         <button onClick={() => fileInputRef.current?.click()}>Import JSON</button>
         <button onClick={onClear} className="danger">
