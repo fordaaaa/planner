@@ -417,6 +417,13 @@
   animation: node-in 0.15s ease-out;
 }
 
+.voice-error-detail {
+  margin-top: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  opacity: 0.8;
+}
+
 .voice-compile {
   align-self: flex-start;
   padding: 9px 16px;
