@@ -1,6 +1,6 @@
 import type { Edge, Node } from '@xyflow/react';
 
-export type NodeKind = 'start' | 'agent' | 'tool' | 'decision' | 'end';
+export type NodeKind = 'start' | 'agent' | 'subagent' | 'tool' | 'decision' | 'end';
 
 export interface WorkflowNodeData extends Record<string, unknown> {
   label: string;
@@ -15,4 +15,4 @@ export interface WorkflowGraph {
   edges: Edge[];
 }
 
-export const NODE_KINDS: NodeKind[] = ['start', 'agent', 'tool', 'decision', 'end'];
+export const NODE_KINDS: NodeKind[] = ['start', 'agent', 'subagent', 'tool', 'decision', 'end'];

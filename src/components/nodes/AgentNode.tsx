@@ -4,6 +4,7 @@ import type { WorkflowNode } from '../../lib/types';
 const KIND_COLORS: Record<string, string> = {
   start: '#22c55e',
   agent: '#6366f1',
+  subagent: '#818cf8',
   tool: '#f59e0b',
   decision: '#ec4899',
   end: '#ef4444',
