@@ -65,7 +65,7 @@ export function commandsToGraph(commands: Command[]): WorkflowGraph {
       id: nextId('edge'),
       source,
       target,
-      style: kind === 'spawn' ? { strokeDasharray: '4 4' } : undefined,
+      className: kind === 'spawn' ? 'spawn-edge' : undefined,
     });
   };
 

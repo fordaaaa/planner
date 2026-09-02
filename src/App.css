@@ -211,8 +211,24 @@
   min-width: 160px;
   text-align: left;
   box-shadow: var(--shadow);
-  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  transition: border-color 0.12s ease, box-shadow 0.15s ease, transform 0.15s ease;
   animation: node-in 0.2s ease-out;
+}
+
+.agent-node:hover {
+  transform: translateY(-2px);
+  box-shadow: rgba(35, 32, 26, 0.14) 0 10px 20px -6px, rgba(35, 32, 26, 0.06) 0 4px 8px -2px;
+}
+
+.canvas-wrap .react-flow__edge.spawn-edge .react-flow__edge-path {
+  stroke-dasharray: 5 4;
+  animation: edge-flow 0.8s linear infinite;
+}
+
+@keyframes edge-flow {
+  to {
+    stroke-dashoffset: -18;
+  }
 }
 
 @keyframes node-in {
@@ -447,4 +463,138 @@
 .voice-compile:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.toast-stack {
+  position: absolute;
+  top: 76px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 40;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  animation: toast-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 320px;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-success {
+  background: var(--teal);
+}
+
+.toast-error {
+  background: #b3261e;
+}
+
+.toast-info {
+  background: var(--text-h);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(35, 32, 26, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  animation: backdrop-in 0.15s ease-out;
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  width: 320px;
+  box-shadow: var(--shadow);
+  animation: modal-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--text-h);
+}
+
+.modal-card p {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-actions button {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: transform 0.08s ease, background 0.12s ease;
+}
+
+.modal-actions button:active {
+  transform: scale(0.97);
+}
+
+.modal-actions button.danger {
+  border-color: transparent;
+  background: #b3261e;
+  color: #fff;
+}
+
+.modal-actions button.danger:hover {
+  filter: brightness(1.1);
 }
