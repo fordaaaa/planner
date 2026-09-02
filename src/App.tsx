@@ -12,7 +12,10 @@ import Canvas from './components/Canvas';
 import Toolbar from './components/Toolbar';
 import NodeInspector from './components/NodeInspector';
 import VoicePanel from './components/VoicePanel';
+import ToastStack from './components/ToastStack';
+import ConfirmModal from './components/ConfirmModal';
 import { exportGraph, importGraph, loadFromLocalStorage, saveToLocalStorage } from './lib/graphStorage';
+import { useToasts } from './lib/useToasts';
 import type { WorkflowGraph, WorkflowNode, WorkflowNodeData } from './lib/types';
 import './App.css';
 
@@ -39,6 +42,8 @@ function App() {
   const [edges, setEdges] = useState<Edge[]>(STARTER_GRAPH.edges);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
 
   useEffect(() => {
     const saved = loadFromLocalStorage();
@@ -91,34 +96,46 @@ function App() {
     setSelectedId(null);
   }, []);
 
-  const handleClear = useCallback(() => {
-    if (!confirm('Clear the whole canvas?')) return;
+  const handleClear = useCallback(() => setConfirmClear(true), []);
+
+  const handleConfirmClear = useCallback(() => {
     setNodes(STARTER_GRAPH.nodes);
     setEdges(STARTER_GRAPH.edges);
     setSelectedId(null);
-  }, []);
+    setConfirmClear(false);
+    pushToast('Canvas cleared', 'info');
+  }, [pushToast]);
 
   const handleExport = useCallback(() => {
     exportGraph({ nodes, edges });
-  }, [nodes, edges]);
+    pushToast('Workflow exported', 'success');
+  }, [nodes, edges, pushToast]);
 
-  const handleImport = useCallback(async (file: File) => {
-    try {
-      const graph = await importGraph(file);
+  const handleImport = useCallback(
+    async (file: File) => {
+      try {
+        const graph = await importGraph(file);
+        setNodes(graph.nodes);
+        setEdges(graph.edges);
+        setSelectedId(null);
+        pushToast('Workflow imported', 'success');
+      } catch (err) {
+        pushToast(err instanceof Error ? err.message : 'Failed to import workflow', 'error');
+      }
+    },
+    [pushToast],
+  );
+
+  const handleVoiceCompile = useCallback(
+    (graph: WorkflowGraph) => {
       setNodes(graph.nodes);
       setEdges(graph.edges);
       setSelectedId(null);
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to import workflow');
-    }
-  }, []);
-
-  const handleVoiceCompile = useCallback((graph: WorkflowGraph) => {
-    setNodes(graph.nodes);
-    setEdges(graph.edges);
-    setSelectedId(null);
-    setVoiceOpen(false);
-  }, []);
+      setVoiceOpen(false);
+      pushToast('Workflow compiled from voice', 'success');
+    },
+    [pushToast],
+  );
 
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
 
@@ -144,6 +161,16 @@ function App() {
         <NodeInspector node={selectedNode} onChange={handleNodeDataChange} onDelete={handleDeleteNode} />
       </div>
       {voiceOpen && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}
+      {confirmClear && (
+        <ConfirmModal
+          title="Clear the canvas?"
+          body="This removes every node and edge and resets to a single Start node. This can't be undone."
+          confirmLabel="Clear"
+          onConfirm={handleConfirmClear}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }
