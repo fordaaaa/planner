@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import {
-  Background,
   Controls,
   MiniMap,
   ReactFlow,
@@ -45,7 +44,6 @@ export default function Canvas({
         onPaneClick={() => onNodeClick(null)}
         fitView
       >
-        <Background color="var(--border)" gap={20} />
         <Controls />
         <MiniMap
           pannable
