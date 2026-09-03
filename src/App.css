@@ -14,10 +14,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
+  padding: 10px 20px;
   border-bottom: 1px solid var(--border);
   gap: 16px;
   background: var(--panel);
+  box-shadow: rgba(35, 32, 26, 0.04) 0 1px 0;
   z-index: 20;
 }
 
@@ -36,36 +37,58 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   background: var(--accent);
   color: var(--accent-ink);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
 }
 
 .toolbar-actions {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-group {
+  display: flex;
+  gap: 4px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin: 0 8px;
 }
 
 .toolbar-actions button {
   font: inherit;
   font-size: 13px;
   font-weight: 500;
-  padding: 7px 13px;
+  padding: 7px 12px;
   border-radius: 7px;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--text-h);
   cursor: pointer;
-  transition: border-color 0.12s ease, background 0.12s ease, transform 0.08s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.12s ease, background 0.12s ease, transform 0.08s ease, color 0.12s ease;
+}
+
+.toolbar-actions button svg {
+  flex-shrink: 0;
+  opacity: 0.75;
 }
 
 .toolbar-actions button:hover {
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
+  border-color: var(--border);
+  background: var(--code-bg);
 }
 
 .toolbar-actions button:active {
@@ -74,18 +97,26 @@
 
 .toolbar-actions button.danger {
   color: #b3261e;
-  border-color: rgba(179, 38, 30, 0.3);
 }
 
 .toolbar-actions button.danger:hover {
   background: rgba(179, 38, 30, 0.08);
-  border-color: rgba(179, 38, 30, 0.45);
+  border-color: rgba(179, 38, 30, 0.25);
 }
 
-.toolbar-actions button.active {
+.toolbar-actions button.primary {
   border-color: var(--accent);
   background: var(--accent);
   color: var(--accent-ink);
+}
+
+.toolbar-actions button.primary svg {
+  opacity: 1;
+}
+
+.toolbar-actions button.primary:hover {
+  background: var(--accent);
+  filter: brightness(1.08);
 }
 
 .app-body {
