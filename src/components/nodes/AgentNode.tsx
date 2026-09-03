@@ -10,7 +10,11 @@ const KIND_COLORS: Record<string, string> = {
   end: '#8f2d20',
 };
 
-export default function AgentNode({ data, selected }: NodeProps<WorkflowNode>) {
+interface AgentNodeProps extends NodeProps<WorkflowNode> {
+  onAddChild?: (parentId: string) => void;
+}
+
+export default function AgentNode({ id, data, selected, onAddChild }: AgentNodeProps) {
   const color = KIND_COLORS[data.kind] ?? '#b1490f';
 
   return (
@@ -28,6 +32,19 @@ export default function AgentNode({ data, selected }: NodeProps<WorkflowNode>) {
       <div className="agent-node-label">{data.label}</div>
       {data.description && <div className="agent-node-desc">{data.description}</div>}
       <Handle type="source" position={Position.Bottom} />
+      {onAddChild && (
+        <button
+          type="button"
+          className="agent-node-add-child nodrag"
+          title="Add connected step"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddChild(id);
+          }}
+        >
+          +
+        </button>
+      )}
     </div>
   );
 }

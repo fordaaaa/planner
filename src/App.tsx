@@ -73,17 +73,33 @@ function App() {
     [],
   );
 
-  const handleAddNode = useCallback(() => {
+  const addChainedNode = useCallback((parentId: string | null) => {
     const id = nextNodeId();
-    const newNode: WorkflowNode = {
-      id,
-      type: 'agent',
-      position: { x: 100 + Math.random() * 300, y: 100 + Math.random() * 300 },
-      data: { label: 'New step', kind: 'agent', description: '' },
-    };
-    setNodes((nds) => [...nds, newNode]);
+
+    setNodes((nds) => {
+      const parent = parentId ? nds.find((n) => n.id === parentId) : null;
+      const position = parent
+        ? { x: parent.position.x, y: parent.position.y + 160 }
+        : { x: 100 + Math.random() * 300, y: 100 + Math.random() * 300 };
+      const newNode: WorkflowNode = {
+        id,
+        type: 'agent',
+        position,
+        data: { label: 'New step', kind: 'agent', description: '' },
+      };
+      return [...nds, newNode];
+    });
+
+    if (parentId) {
+      setEdges((eds) => [...eds, { id: `edge-${id}`, source: parentId, target: id }]);
+    }
+
     setSelectedId(id);
   }, []);
+
+  const handleAddNode = useCallback(() => {
+    addChainedNode(selectedId);
+  }, [addChainedNode, selectedId]);
 
   const handleNodeDataChange = useCallback((id: string, data: Partial<WorkflowNodeData>) => {
     setNodes((nds) =>
@@ -159,6 +175,7 @@ function App() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeClick={(node) => setSelectedId(node?.id ?? null)}
+          onAddChild={addChainedNode}
         >
           {showOnboarding && <OnboardingHint />}
         </Canvas>

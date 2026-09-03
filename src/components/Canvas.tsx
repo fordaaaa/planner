@@ -4,6 +4,7 @@ import {
   MiniMap,
   ReactFlow,
   type Edge,
+  type NodeProps,
   type OnConnect,
   type OnNodesChange,
   type OnEdgesChange,
@@ -19,6 +20,7 @@ interface CanvasProps {
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   onNodeClick: (node: WorkflowNode | null) => void;
+  onAddChild: (parentId: string) => void;
   children?: ReactNode;
 }
 
@@ -29,9 +31,15 @@ export default function Canvas({
   onEdgesChange,
   onConnect,
   onNodeClick,
+  onAddChild,
   children,
 }: CanvasProps) {
-  const nodeTypes = useMemo(() => ({ agent: AgentNode }), []);
+  const nodeTypes = useMemo(
+    () => ({
+      agent: (props: NodeProps<WorkflowNode>) => <AgentNode {...props} onAddChild={onAddChild} />,
+    }),
+    [onAddChild],
+  );
 
   return (
     <div className="canvas-wrap">
