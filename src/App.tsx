@@ -15,6 +15,8 @@ import VoicePanel from './components/VoicePanel';
 import ToastStack from './components/ToastStack';
 import ConfirmModal from './components/ConfirmModal';
 import OnboardingHint from './components/OnboardingHint';
+import ProjectsView from './pm/ProjectsView';
+import BoardView from './pm/BoardView';
 import { exportGraph, importGraph, loadFromLocalStorage, saveToLocalStorage } from './lib/graphStorage';
 import { useToasts } from './lib/useToasts';
 import type { WorkflowGraph, WorkflowNode, WorkflowNodeData } from './lib/types';
@@ -44,6 +46,8 @@ function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [view, setView] = useState<'canvas' | 'pm'>('canvas');
+  const [pmSlug, setPmSlug] = useState<string | null>(null);
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
 
   useEffect(() => {
@@ -166,7 +170,16 @@ function App() {
         onClear={handleClear}
         onToggleVoice={() => setVoiceOpen((v) => !v)}
         voiceOpen={voiceOpen}
+        pmActive={view === 'pm'}
+        onTogglePm={() => setView((v) => (v === 'pm' ? 'canvas' : 'pm'))}
       />
+      {view === 'pm' ? (
+        pmSlug ? (
+          <BoardView slug={pmSlug} onBack={() => setPmSlug(null)} />
+        ) : (
+          <ProjectsView onOpenProject={setPmSlug} onBack={() => setView('canvas')} />
+        )
+      ) : (
       <div className="app-body">
         <Canvas
           nodes={nodes}
@@ -181,7 +194,8 @@ function App() {
         </Canvas>
         <NodeInspector node={selectedNode} onChange={handleNodeDataChange} onDelete={handleDeleteNode} />
       </div>
-      {voiceOpen && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}
+      )}
+      {voiceOpen && view === 'canvas' && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}
       {confirmClear && (
         <ConfirmModal
           title="Clear the canvas?"

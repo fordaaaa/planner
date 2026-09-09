@@ -34,3 +34,25 @@ Then point an MCP client at `node <path>/mcp-server/dist/index.js`. For Claude C
 ## Storage
 
 Workflows are saved as `<name>.json` under `~/.planner-workflows` by default. Override with the `PLANNER_WORKFLOWS_DIR` environment variable.
+
+## Project management (PM)
+
+Plane.so-lite issue tracking shared with the app's Projects view. Serve it locally with `npm run pm:serve` (`PLANNER_PM_PORT`, default `7808`); the Projects view reads from that server, auto-syncs every 5s, and shows an offline banner when it's down.
+
+- `pm_list_projects` — lists projects.
+- `pm_create_project` — creates a project.
+- `pm_board` — returns a project's kanban board.
+- `pm_create_issue` — creates an issue.
+- `pm_update_issue` — updates an issue's status/fields.
+- `pm_list_issues` — lists issues.
+- `pm_get_issue` — returns one issue with comments.
+- `pm_log` — appends a comment/progress note.
+
+```
+# conceptually, via MCP:
+pm_create_issue(project="website", title="Add offline banner", status="todo")
+```
+
+### PM storage
+
+Issues persist as JSON under `~/.planner-projects/` by default. Override with the `PLANNER_PROJECTS_DIR` environment variable.

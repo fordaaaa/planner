@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Agent protocol — private, this repo is public
+AGENTS.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

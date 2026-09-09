@@ -7,6 +7,8 @@ interface ToolbarProps {
   onClear: () => void;
   onToggleVoice: () => void;
   voiceOpen: boolean;
+  pmActive?: boolean;
+  onTogglePm?: () => void;
 }
 
 function PlusIcon() {
@@ -68,7 +70,16 @@ function TrashIcon() {
   );
 }
 
-export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen }: ToolbarProps) {
+function BoardIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <rect x="1.5" y="1.5" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M5.5 1.5v11M9.5 1.5v11" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen, pmActive, onTogglePm }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -83,6 +94,10 @@ export default function Toolbar({ onAddNode, onExport, onImport, onClear, onTogg
           <button onClick={onToggleVoice} className={voiceOpen ? 'primary' : ''}>
             <MicIcon />
             Voice build
+          </button>
+          <button onClick={onTogglePm} className={pmActive ? 'primary' : ''}>
+            <BoardIcon />
+            Projects
           </button>
         </div>
 

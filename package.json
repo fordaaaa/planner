@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "pm:serve": "npm --prefix mcp-server run pm:serve"
   },
   "dependencies": {
     "@xyflow/react": "^12.11.6",
