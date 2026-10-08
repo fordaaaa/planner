@@ -6,10 +6,11 @@ Visual workflow planner for AI agent runs. Chain prompts into an executable plan
 
 ## What it does
 
-- **Canvas** — drag-and-drop plan graph (`start → agent → subagent/tool/decision → end`) with auto-chaining, import/export JSON, and localStorage persistence.
+- **Canvas** — drag-and-drop plan graph (`start → agent → subagent/tool/decision → end`) with auto-chaining and import/export JSON.
+- **Private by default** — every visit starts a fresh session. Nothing is saved unless you choose “Remember in this browser” (local storage only — no account, no server, nothing leaves your machine). Toggle anytime with the Session/Saved button.
 - **Building blocks** — 14 copy-paste-ready prompt blocks distilled from [ECC](https://github.com/affaan-m/ecc) (Everything Claude Code) and edited to work standalone: triage, release scope, PRD, plan, architect, TDD build, build fix, fresh-eyes review, security audit, verify gate, E2E, refactor, docs, ship. One click inserts a step pre-filled with its prompt.
 - **Workflow templates** — pre-built chains: spec-plan trio, full ECC feature loop, fix loop, harden & ship. Review steps fork as subagents off the build step.
-- **Plan.md export + copy prompt chain** — download the plan as markdown or copy a numbered step-by-step prompt sequence straight into an agent session.
+- **Export the prompt** — download the whole workflow as one paste-ready `prompt.md`, download the plan as markdown, or copy a numbered step-by-step chain straight into an agent session.
 - **Voice build** — speak (or type) keyword commands (`start … agent … subagent … end`) and compile them to a graph.
 - **Projects / PM** — Plane.so-lite issue tracking with a 6-column kanban the AI can drive via MCP (`npm run pm:serve`, then the Projects button).
 

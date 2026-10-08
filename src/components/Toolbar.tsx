@@ -12,7 +12,10 @@ interface ToolbarProps {
   blocksOpen?: boolean;
   onToggleBlocks?: () => void;
   onExportMarkdown?: () => void;
+  onExportPrompt?: () => void;
   onCopyChain?: () => void;
+  persistOn?: boolean;
+  onTogglePersist?: () => void;
 }
 
 function PlusIcon() {
@@ -103,6 +106,23 @@ function CopyIcon() {
   );
 }
 
+function DocIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M3.5 1.5h5l2 2v9h-7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M8.5 1.5v2h2M5.5 7h3M5.5 9.5h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function BookmarkIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M4 1.5h6v11l-3-2.2-3 2.2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function MarkdownIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -111,12 +131,11 @@ function MarkdownIcon() {
   );
 }
 
-export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen, pmActive, onTogglePm, blocksOpen, onToggleBlocks, onExportMarkdown, onCopyChain }: ToolbarProps) {
+export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen, pmActive, onTogglePm, blocksOpen, onToggleBlocks, onExportMarkdown, onExportPrompt, onCopyChain, persistOn, onTogglePersist }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="toolbar">
-      <div className="toolbar-title">Planner</div>
       <div className="toolbar-actions">
         <div className="toolbar-group">
           <button onClick={onAddNode} title="Add a blank step after the selection">
@@ -163,6 +182,10 @@ export default function Toolbar({ onAddNode, onExport, onImport, onClear, onTogg
             <MarkdownIcon />
             <span className="btn-label">Plan.md</span>
           </button>
+          <button onClick={onExportPrompt} title="Download the whole workflow as one paste-ready prompt file">
+            <DocIcon />
+            <span className="btn-label">Prompt</span>
+          </button>
           <button onClick={onCopyChain} title="Copy the full prompt chain to clipboard">
             <CopyIcon />
             <span className="btn-label">Copy prompts</span>
@@ -175,10 +198,21 @@ export default function Toolbar({ onAddNode, onExport, onImport, onClear, onTogg
 
         <div className="toolbar-divider" />
 
-        <button onClick={onClear} className="danger" title="Remove all nodes and reset the canvas">
-          <TrashIcon />
-          <span className="btn-label">Clear</span>
-        </button>
+        <div className="toolbar-group">
+          <button
+            onClick={onTogglePersist}
+            className={persistOn ? 'primary' : ''}
+            aria-pressed={persistOn}
+            title={persistOn ? 'Saving in this browser — click to switch to session-only' : 'Session-only — click to remember in this browser'}
+          >
+            <BookmarkIcon />
+            <span className="btn-label">{persistOn ? 'Saved' : 'Session'}</span>
+          </button>
+          <button onClick={onClear} className="danger" title="Remove all nodes and reset the canvas">
+            <TrashIcon />
+            <span className="btn-label">Clear</span>
+          </button>
+        </div>
 
         <input
           ref={fileInputRef}

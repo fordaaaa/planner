@@ -12,15 +12,16 @@ import Canvas from './components/Canvas';
 import Toolbar from './components/Toolbar';
 import NodeInspector from './components/NodeInspector';
 import BlocksPanel from './components/BlocksPanel';
+import ConsentBanner from './components/ConsentBanner';
 import { BLOCK_MAP, TEMPLATE_MAP } from './lib/blocks';
-import { downloadMarkdown, graphToPromptChain } from './lib/planExport';
+import { downloadMarkdown, downloadPrompt, graphToPromptChain } from './lib/planExport';
 import VoicePanel from './components/VoicePanel';
 import ToastStack from './components/ToastStack';
 import ConfirmModal from './components/ConfirmModal';
 import OnboardingHint from './components/OnboardingHint';
 import ProjectsView from './pm/ProjectsView';
 import BoardView from './pm/BoardView';
-import { exportGraph, importGraph, loadFromLocalStorage, saveToLocalStorage } from './lib/graphStorage';
+import { clearSavedGraph, exportGraph, getPersistPref, importGraph, loadFromLocalStorage, saveToLocalStorage, setPersistPref, type PersistPref } from './lib/graphStorage';
 import { useToasts } from './lib/useToasts';
 import type { WorkflowGraph, WorkflowNode, WorkflowNodeData } from './lib/types';
 import './App.css';
@@ -52,9 +53,13 @@ function App() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [view, setView] = useState<'canvas' | 'pm'>('canvas');
   const [pmSlug, setPmSlug] = useState<string | null>(null);
+  // null = user hasn't chosen yet (consent banner shows). Default is session-only:
+  // every visit starts fresh unless they opt into browser saving.
+  const [persist, setPersist] = useState<PersistPref | null>(() => getPersistPref());
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
 
   useEffect(() => {
+    if (getPersistPref() !== 'remember') return;
     const saved = loadFromLocalStorage();
     if (saved) {
       setNodes(saved.nodes);
@@ -63,8 +68,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    saveToLocalStorage({ nodes, edges });
-  }, [nodes, edges]);
+    if (persist === 'remember') {
+      saveToLocalStorage({ nodes, edges });
+    }
+  }, [nodes, edges, persist]);
 
   const onNodesChange: OnNodesChange<WorkflowNode> = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -301,6 +308,15 @@ function App() {
     pushToast('Plan.md exported', 'success');
   }, [nodes, edges, pushToast]);
 
+  const handleExportPrompt = useCallback(() => {
+    if (!graphToPromptChain({ nodes, edges })) {
+      pushToast('No prompts to export yet', 'info');
+      return;
+    }
+    downloadPrompt({ nodes, edges });
+    pushToast('Prompt exported', 'success');
+  }, [nodes, edges, pushToast]);
+
   const handleCopyChain = useCallback(async () => {
     const text = graphToPromptChain({ nodes, edges });
     if (!text) {
@@ -313,6 +329,31 @@ function App() {
     } catch {
       pushToast('Copy failed — clipboard unavailable', 'error');
     }
+  }, [nodes, edges, pushToast]);
+
+  const handleTogglePersist = useCallback(() => {
+    const next: PersistPref = persist === 'remember' ? 'session' : 'remember';
+    setPersist(next);
+    setPersistPref(next);
+    if (next === 'session') {
+      clearSavedGraph();
+      pushToast('Session-only — saved copy deleted from this browser', 'info');
+    } else {
+      saveToLocalStorage({ nodes, edges });
+      pushToast('Remembering this plan in this browser', 'success');
+    }
+  }, [persist, nodes, edges, pushToast]);
+
+  const handleConsentSession = useCallback(() => {
+    setPersist('session');
+    setPersistPref('session');
+  }, []);
+
+  const handleConsentRemember = useCallback(() => {
+    setPersist('remember');
+    setPersistPref('remember');
+    saveToLocalStorage({ nodes, edges });
+    pushToast('Remembering this plan in this browser', 'success');
   }, [nodes, edges, pushToast]);
 
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
@@ -352,7 +393,10 @@ function App() {
         blocksOpen={blocksOpen}
         onToggleBlocks={() => setBlocksOpen((v) => !v)}
         onExportMarkdown={handleExportMarkdown}
+        onExportPrompt={handleExportPrompt}
         onCopyChain={handleCopyChain}
+        persistOn={persist === 'remember'}
+        onTogglePersist={handleTogglePersist}
       />
       {view === 'pm' ? (
         pmSlug ? (
@@ -395,6 +439,9 @@ function App() {
         />
       )}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
+      {view === 'canvas' && persist === null && (
+        <ConsentBanner onSessionOnly={handleConsentSession} onRemember={handleConsentRemember} />
+      )}
     </div>
   );
 }

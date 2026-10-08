@@ -42,6 +42,14 @@ export interface BlockDef {
 
 export const BLOCK_CATEGORIES: BlockCategory[] = ['Spec & Plan', 'Build', 'Review & Verify', 'Ship'];
 
+/** Scratch-style palette: one bold color per planning phase. */
+export const CATEGORY_COLORS: Record<BlockCategory, string> = {
+  'Spec & Plan': '#4c97ff',
+  Build: '#ffab19',
+  'Review & Verify': '#9966ff',
+  Ship: '#59c059',
+};
+
 export const BLOCKS: BlockDef[] = [
   {
     id: 'triage',

@@ -13,8 +13,8 @@
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow: rgba(35, 32, 26, 0.08) 0 6px 16px -4px, rgba(35, 32, 26, 0.04) 0 2px 6px -2px;
 
-  --sans: 'Avenir Next', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: 'Avenir Next', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: ui-rounded, 'SF Pro Rounded', 'Avenir Next Rounded', 'Avenir Next', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: ui-rounded, 'SF Pro Rounded', 'Avenir Next Rounded', 'Avenir Next', system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, 'SF Mono', Consolas, monospace;
 
   font: 18px/145% var(--sans);

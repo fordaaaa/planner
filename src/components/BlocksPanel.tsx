@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { BLOCKS, BLOCK_CATEGORIES, WORKFLOW_TEMPLATES, type BlockDef } from '../lib/blocks';
+import { useMemo, useState, type CSSProperties } from 'react';
+import { BLOCKS, BLOCK_CATEGORIES, CATEGORY_COLORS, WORKFLOW_TEMPLATES, type BlockDef } from '../lib/blocks';
 
 interface BlocksPanelProps {
   onInsertBlock: (blockId: string) => void;
@@ -8,25 +8,20 @@ interface BlocksPanelProps {
   anchorLabel: string | null;
 }
 
-const KIND_DOT: Record<string, string> = {
-  start: '#0f766e',
-  agent: '#b1490f',
-  subagent: '#d98a52',
-  tool: '#4b6a8a',
-  decision: '#8a4a6b',
-  end: '#8f2d20',
-};
-
 function BlockRow({ block, onInsert }: { block: BlockDef; onInsert: () => void }) {
+  const cat = CATEGORY_COLORS[block.category];
   return (
-    <div className="block-row">
+    <div className="block-row" style={{ '--cat': cat } as CSSProperties}>
       <div className="block-row-head">
-        <span className="block-dot" style={{ background: KIND_DOT[block.kind] ?? '#b1490f' }} />
+        <span className="block-notch" aria-hidden="true" />
         <span className="block-title">{block.title}</span>
         <span className="block-kind">{block.kind}</span>
       </div>
       <p className="block-blurb">{block.blurb}</p>
-      <button onClick={onInsert}>Add step</button>
+      <div className="block-row-foot">
+        <span className="block-cat">{block.category}</span>
+        <button onClick={onInsert}>Add step</button>
+      </div>
     </div>
   );
 }
@@ -96,6 +91,7 @@ export default function BlocksPanel({ onInsertBlock, onInsertTemplate, onClose, 
           <button
             key={c}
             className={category === c ? 'active' : ''}
+            style={c === 'All' ? undefined : ({ '--cat': CATEGORY_COLORS[c as keyof typeof CATEGORY_COLORS] } as CSSProperties)}
             onClick={() => setCategory(c)}
           >
             {c}

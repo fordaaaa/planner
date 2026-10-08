@@ -1,6 +1,35 @@
 import type { WorkflowGraph } from './types';
 
 const STORAGE_KEY = 'planner.graph';
+const PREF_KEY = 'planner.persist';
+
+/** Whether the canvas may be saved in this browser. `null` = user hasn't chosen yet. */
+export type PersistPref = 'session' | 'remember';
+
+export function getPersistPref(): PersistPref | null {
+  try {
+    const raw = localStorage.getItem(PREF_KEY);
+    return raw === 'remember' || raw === 'session' ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setPersistPref(pref: PersistPref): void {
+  try {
+    localStorage.setItem(PREF_KEY, pref);
+  } catch {
+    // storage unavailable — session-only by necessity
+  }
+}
+
+export function clearSavedGraph(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 export function saveToLocalStorage(graph: WorkflowGraph): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(graph));

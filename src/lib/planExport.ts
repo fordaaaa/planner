@@ -49,3 +49,28 @@ export function graphToPromptChain(graph: WorkflowGraph): string {
     .map((n, i) => `### Step ${i + 1} — ${n.data.label} [${n.data.kind}]\n\n${n.data.description.trim()}`)
     .join('\n\n---\n\n');
 }
+
+/** Single paste-ready prompt file: intro + the full step chain. */
+export function graphToPrompt(graph: WorkflowGraph): string {
+  const chain = graphToPromptChain(graph);
+  const count = sortedNodes(graph).filter((n) => n.data.description?.trim()).length;
+  return [
+    '# Agent prompt',
+    '',
+    `Run the ${count} step${count === 1 ? '' : 's'} below in order. Complete each step fully — including its tests and checks — before moving to the next. If a step is unclear, ask before guessing.`,
+    '',
+    '---',
+    '',
+    chain,
+  ].join('\n');
+}
+
+export function downloadPrompt(graph: WorkflowGraph): void {
+  const blob = new Blob([graphToPrompt(graph)], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'prompt.md';
+  a.click();
+  URL.revokeObjectURL(url);
+}
