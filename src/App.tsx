@@ -12,8 +12,10 @@ import Canvas from './components/Canvas';
 import Toolbar from './components/Toolbar';
 import NodeInspector from './components/NodeInspector';
 import BlocksPanel from './components/BlocksPanel';
+import ShellPanel, { type ShellResult } from './components/ShellPanel';
 import ConsentBanner from './components/ConsentBanner';
-import { BLOCK_MAP, TEMPLATE_MAP } from './lib/blocks';
+import { BLOCK_MAP, BLOCKS, TEMPLATE_MAP, WORKFLOW_TEMPLATES } from './lib/blocks';
+import { formatStepList, parseShellLine, SHELL_HELP_LINES } from './lib/shell';
 import { downloadMarkdown, downloadPrompt, graphToPromptChain } from './lib/planExport';
 import VoicePanel from './components/VoicePanel';
 import ToastStack from './components/ToastStack';
@@ -49,6 +51,7 @@ function App() {
   const [edges, setEdges] = useState<Edge[]>(STARTER_GRAPH.edges);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [shellOpen, setShellOpen] = useState(false);
   const [blocksOpen, setBlocksOpen] = useState(true);
   const [confirmClear, setConfirmClear] = useState(false);
   const [view, setView] = useState<'canvas' | 'pm'>('canvas');
@@ -122,31 +125,30 @@ function App() {
     [nodes],
   );
 
-  const handleInsertBlock = useCallback(
-    (blockId: string) => {
-      const block = BLOCK_MAP[blockId];
-      if (!block) return;
+  /**
+   * Append a step after the selection (or the lowest node). Returns a short
+   * confirmation line for shell output. Reuses a pristine Start node for
+   * start-kind steps instead of duplicating it.
+   */
+  const appendStep = useCallback(
+    (kind: WorkflowNodeData['kind'], label: string, description: string): string => {
       const anchor = selectedId ? nodes.find((n) => n.id === selectedId) : null;
       const bottom = nodes.reduce((acc, n) => (n.position.y > acc.position.y ? n : acc), nodes[0]);
 
-      // Reuse the pristine Start node instead of duplicating it.
-      if (block.kind === 'start' && bottom && isPristineStarter(bottom) && !anchor) {
+      if (kind === 'start' && bottom && isPristineStarter(bottom) && !anchor) {
         setNodes((nds) =>
           nds.map((n) =>
-            n.id === bottom.id
-              ? { ...n, data: { ...n.data, label: block.label, kind: block.kind, description: block.prompt } }
-              : n,
+            n.id === bottom.id ? { ...n, data: { ...n.data, label, kind, description } } : n,
           ),
         );
         setSelectedId(bottom.id);
-        pushToast(`“${block.title}” applied to Start`, 'success');
-        return;
+        return `~ applied to Start as [${kind}] ${label}`;
       }
 
       const parent = anchor ?? bottom ?? null;
       const id = nextNodeId();
       const position = parent
-        ? block.kind === 'subagent'
+        ? kind === 'subagent'
           ? { x: parent.position.x + 220, y: parent.position.y + 90 }
           : { x: parent.position.x, y: parent.position.y + 160 }
         : { x: 250, y: 50 };
@@ -154,7 +156,7 @@ function App() {
         id,
         type: 'agent',
         position,
-        data: { label: block.label, kind: block.kind, description: block.prompt },
+        data: { label, kind, description },
       };
       setNodes((nds) => [...nds, newNode]);
       if (parent) {
@@ -164,20 +166,31 @@ function App() {
             id: `edge-${id}`,
             source: parent.id,
             target: id,
-            className: block.kind === 'subagent' ? 'spawn-edge' : undefined,
+            className: kind === 'subagent' ? 'spawn-edge' : undefined,
           },
         ]);
       }
       setSelectedId(id);
-      pushToast(`Added “${block.title}”`, 'success');
+      return `+ [${kind}] ${label}`;
     },
-    [nodes, selectedId, isPristineStarter, pushToast],
+    [nodes, selectedId, isPristineStarter],
+  );
+
+  const handleInsertBlock = useCallback(
+    (blockId: string, quiet = false) => {
+      const block = BLOCK_MAP[blockId];
+      if (!block) return `? unknown block "${blockId}"`;
+      const line = appendStep(block.kind, block.label, block.prompt);
+      if (!quiet) pushToast(`Added “${block.title}”`, 'success');
+      return `+ ${block.title} ${line}`;
+    },
+    [appendStep, pushToast],
   );
 
   const handleInsertTemplate = useCallback(
-    (templateId: string) => {
+    (templateId: string, quiet = false) => {
       const template = TEMPLATE_MAP[templateId];
-      if (!template) return;
+      if (!template) return `? unknown template "${templateId}"`;
       const anchor = selectedId ? nodes.find((n) => n.id === selectedId) : null;
       const bottom = nodes.length
         ? nodes.reduce((acc, n) => (n.position.y > acc.position.y ? n : acc), nodes[0])
@@ -245,7 +258,8 @@ function App() {
       } else if (firstStepSkipped && cursor) {
         setSelectedId(cursor.id);
       }
-      pushToast(`Inserted “${template.title}” (${template.steps.length} steps)`, 'success');
+      if (!quiet) pushToast(`Inserted “${template.title}” (${template.steps.length} steps)`, 'success');
+      return `+ ${template.title} (${template.steps.length} steps)`;
     },
     [nodes, selectedId, isPristineStarter, pushToast],
   );
@@ -356,6 +370,55 @@ function App() {
     pushToast('Remembering this plan in this browser', 'success');
   }, [nodes, edges, pushToast]);
 
+  const handleToggleVoice = useCallback(() => {
+    setVoiceOpen((v) => {
+      if (!v) setShellOpen(false);
+      return !v;
+    });
+  }, []);
+
+  const handleToggleShell = useCallback(() => {
+    setShellOpen((v) => {
+      if (!v) setVoiceOpen(false);
+      return !v;
+    });
+  }, []);
+
+  const handleShell = useCallback(
+    (line: string): ShellResult => {
+      const catalogs = {
+        blocks: BLOCKS.map((b) => ({ id: b.id, title: b.title })),
+        templates: WORKFLOW_TEMPLATES.map((t) => ({ id: t.id, title: t.title })),
+      };
+      const action = parseShellLine(line, catalogs);
+      switch (action.type) {
+        case 'empty':
+          return { lines: [] };
+        case 'add-step':
+          return { lines: [appendStep(action.kind, action.label, '')] };
+        case 'insert-block':
+          return { lines: [handleInsertBlock(action.blockId, true) ?? `? unknown block`] };
+        case 'insert-template':
+          return { lines: [handleInsertTemplate(action.templateId, true) ?? `? unknown template`] };
+        case 'list-steps':
+          return { lines: formatStepList(nodes) };
+        case 'list-blocks':
+          return { lines: BLOCKS.map((b) => `${b.id} — ${b.title}`) };
+        case 'list-templates':
+          return { lines: WORKFLOW_TEMPLATES.map((t) => `${t.id} (${t.steps.length}) — ${t.title}`) };
+        case 'help':
+          return { lines: SHELL_HELP_LINES };
+        case 'clear':
+          return { lines: [], clear: true };
+        case 'unknown':
+          return {
+            lines: [`? unknown command: ${action.input}`, action.hint ?? 'type `help` for commands'],
+          };
+      }
+    },
+    [appendStep, handleInsertBlock, handleInsertTemplate, nodes],
+  );
+
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
   const showOnboarding = nodes.length === 1 && edges.length === 0 && !voiceOpen;
 
@@ -369,6 +432,7 @@ function App() {
       }
       if (e.key === 'Escape') {
         if (voiceOpen) setVoiceOpen(false);
+        else if (shellOpen) setShellOpen(false);
         else setSelectedId(null);
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
         e.preventDefault();
@@ -377,7 +441,7 @@ function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedId, voiceOpen, handleDeleteNode]);
+  }, [selectedId, voiceOpen, shellOpen, handleDeleteNode]);
 
   return (
     <div className="app">
@@ -386,8 +450,10 @@ function App() {
         onExport={handleExport}
         onImport={handleImport}
         onClear={handleClear}
-        onToggleVoice={() => setVoiceOpen((v) => !v)}
+        onToggleVoice={handleToggleVoice}
         voiceOpen={voiceOpen}
+        shellOpen={shellOpen}
+        onToggleShell={handleToggleShell}
         pmActive={view === 'pm'}
         onTogglePm={() => setView((v) => (v === 'pm' ? 'canvas' : 'pm'))}
         blocksOpen={blocksOpen}
@@ -425,6 +491,7 @@ function App() {
         >
           {showOnboarding && <OnboardingHint />}
           {voiceOpen && view === 'canvas' && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}
+          {shellOpen && view === 'canvas' && <ShellPanel onRun={handleShell} onClose={() => setShellOpen(false)} />}
         </Canvas>
         <NodeInspector node={selectedNode} onChange={handleNodeDataChange} onDelete={handleDeleteNode} />
       </div>

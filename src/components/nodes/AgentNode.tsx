@@ -7,6 +7,7 @@ const KIND_COLORS: Record<string, string> = {
   subagent: '#d98a52',
   tool: '#4b6a8a',
   decision: '#8a4a6b',
+  question: '#5cb1d6',
   end: '#8f2d20',
 };
 

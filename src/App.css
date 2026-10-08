@@ -536,6 +536,125 @@
   cursor: not-allowed;
 }
 
+.shell-panel {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  max-width: 620px;
+  margin: 0 auto;
+  border-radius: 12px;
+  background: #23201a;
+  color: #f1ece0;
+  box-shadow: var(--shadow);
+  z-index: 10;
+  overflow: hidden;
+  animation: voice-panel-in 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: text;
+}
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(241, 236, 224, 0.15);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.shell-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #f1ece0;
+}
+
+.shell-dots {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.shell-dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(241, 236, 224, 0.25);
+}
+
+.shell-dots i:first-child {
+  background: #ff5f57;
+}
+
+.shell-dots i:nth-child(2) {
+  background: #febc2e;
+}
+
+.shell-dots i:nth-child(3) {
+  background: #28c840;
+}
+
+.shell-header button {
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(241, 236, 224, 0.25);
+  background: transparent;
+  color: #f1ece0;
+  cursor: pointer;
+}
+
+.shell-header button:hover {
+  background: rgba(241, 236, 224, 0.12);
+}
+
+.shell-body {
+  padding: 10px 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.shell-cmd {
+  color: #ffd9a8;
+  overflow-wrap: anywhere;
+}
+
+.shell-out {
+  color: rgba(241, 236, 224, 0.85);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.shell-prompt {
+  color: #59c059;
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.shell-input-row {
+  display: flex;
+  align-items: center;
+}
+
+.shell-input-row input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: #f1ece0;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+}
+
+.shell-input-row input::placeholder {
+  color: rgba(241, 236, 224, 0.35);
+}
+
 .toast-stack {
   position: absolute;
   top: 76px;
@@ -1075,6 +1194,12 @@ button:focus-visible {
   }
 
   .voice-panel {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .shell-panel {
     left: 12px;
     right: 12px;
     bottom: 12px;

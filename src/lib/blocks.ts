@@ -1,5 +1,5 @@
 /** Node kind this block creates. Mirrors WorkflowNodeData['kind'] but kept local so this file has zero imports and can be synced into mcp-server as-is. */
-export type BlockKind = 'start' | 'agent' | 'subagent' | 'tool' | 'decision' | 'end';
+export type BlockKind = 'start' | 'agent' | 'subagent' | 'tool' | 'decision' | 'question' | 'end';
 
 /**
  * Building blocks library.
@@ -125,6 +125,24 @@ End with: validation status (problem validated|assumption, users concrete|generi
 
 Output format: Summary, Patterns to Mirror (table), Files to Change (table), Tasks (Phase → steps with Action/Mirror/Validate), Validation (bash block), Risks (table), Acceptance checklist.
 CRITICAL: stop after the plan and WAIT for explicit approval ("yes" / "modify: ..."). Do not write implementation code until approved.`,
+  },
+  {
+    id: 'question',
+    title: 'Questions — Clarify First',
+    category: 'Spec & Plan',
+    kind: 'question',
+    label: 'Ask about [unclear point]',
+    blurb: 'One batched Q&A round with options. Skipped answers become recorded assumptions.',
+    prompt: `You are blocked on answers — ask me before doing anything else.
+Context: [paste the SPEC section, decision, or error that's unclear].
+
+Ask at most [3] questions, most important first. For each one:
+- The question in one line
+- 2–4 concrete options with your recommendation marked
+- What changes depending on the answer
+
+Rules: batch everything into ONE round — no drip-feeding follow-ups. If I skip a question, record it explicitly as "Assumed: ..." and continue; never silently guess.
+End with: Answers (verbatim) + Assumptions made + What this unblocks next.`,
   },
   {
     id: 'architect',

@@ -1,14 +1,14 @@
 import type { Edge } from '@xyflow/react';
 import type { WorkflowGraph, WorkflowNode } from './types';
 
-export type CommandKeyword = 'start' | 'agent' | 'subagent' | 'tool' | 'decision' | 'end';
+export type CommandKeyword = 'start' | 'agent' | 'subagent' | 'tool' | 'decision' | 'question' | 'end';
 
 export interface Command {
   keyword: CommandKeyword;
   label: string;
 }
 
-const KEYWORDS: CommandKeyword[] = ['start', 'agent', 'subagent', 'tool', 'decision', 'end'];
+const KEYWORDS: CommandKeyword[] = ['start', 'agent', 'subagent', 'tool', 'decision', 'question', 'end'];
 const KEYWORD_PATTERN = new RegExp(`\\b(${KEYWORDS.join('|')})\\b`, 'gi');
 
 export class VoiceGraphError extends Error {}
@@ -91,7 +91,8 @@ export function commandsToGraph(commands: Command[]): WorkflowGraph {
 
       case 'agent':
       case 'tool':
-      case 'decision': {
+      case 'decision':
+      case 'question': {
         if (!startId) throw new VoiceGraphError(`Heard "${keyword}" before "start"`);
         mainStep += 1;
         const id = nextId(keyword);

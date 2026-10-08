@@ -42,6 +42,13 @@ describe('commandsToGraph', () => {
     expect(() => commandsToGraph(tokenizeCommands('start a start b'))).toThrow(WorkflowGraphError);
   });
 
+  it('treats question as a sequential main step', () => {
+    const graph = commandsToGraph(
+      tokenizeCommands('start auth work question which provider agent implement oauth end'),
+    );
+    expect(graph.nodes.map((n) => n.data.kind)).toEqual(['start', 'question', 'agent', 'end']);
+  });
+
   it('rejects agent before start', () => {
     expect(() => commandsToGraph(tokenizeCommands('agent a'))).toThrow(WorkflowGraphError);
   });

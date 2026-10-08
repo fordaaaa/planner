@@ -35,7 +35,7 @@ Then point an MCP client at `node <path>/mcp-server/dist/index.js`. For Claude C
 
 12 reusable prompt blocks distilled from ECC (Everything Claude Code) and edited to work standalone, plus 4 workflow templates. Same catalogue as the web app's Blocks panel (`src/lib/blocks.ts` is the source of truth — refresh the copy with `npm run sync:blocks`).
 
-- `list_building_blocks()` — the 14 blocks (triage, release-scope, PRD, plan, architect, TDD, build-fix, review, security, verify, e2e, refactor, docs, ship).
+- `list_building_blocks()` — the 15 blocks (triage, release-scope, PRD, question, plan, architect, TDD, build-fix, review, security, verify, e2e, refactor, docs, ship).
 - `get_block_prompt(id)` — full copy-paste prompt text for one block.
 - `list_workflow_templates()` — pre-built chains (spec-plan-trio, feature-loop, fix-loop, harden-ship).
 - `template_transcript(id)` — renders a template as a transcript for `build_workflow`.

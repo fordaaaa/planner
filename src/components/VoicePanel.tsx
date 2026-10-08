@@ -56,7 +56,7 @@ export default function VoicePanel({ onCompile, onClose }: VoicePanelProps) {
   return (
     <div className="voice-panel">
       <div className="voice-panel-header">
-        <span>Voice build — say "start", "agent", "subagent", "end"</span>
+        <span>Voice build — say "start", "agent", "question", "subagent", "end"</span>
         <button onClick={onClose}>Close</button>
       </div>
 

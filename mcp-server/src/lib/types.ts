@@ -1,4 +1,4 @@
-export type NodeKind = 'start' | 'agent' | 'subagent' | 'tool' | 'decision' | 'end';
+export type NodeKind = 'start' | 'agent' | 'subagent' | 'tool' | 'decision' | 'question' | 'end';
 
 export interface WorkflowNodeData {
   label: string;

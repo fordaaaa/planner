@@ -1,13 +1,13 @@
 import type { WorkflowEdge, WorkflowGraph, WorkflowNode } from './types.js';
 
-export type CommandKeyword = 'start' | 'agent' | 'subagent' | 'tool' | 'decision' | 'end';
+export type CommandKeyword = 'start' | 'agent' | 'subagent' | 'tool' | 'decision' | 'question' | 'end';
 
 export interface Command {
   keyword: CommandKeyword;
   label: string;
 }
 
-const KEYWORDS: CommandKeyword[] = ['start', 'agent', 'subagent', 'tool', 'decision', 'end'];
+const KEYWORDS: CommandKeyword[] = ['start', 'agent', 'subagent', 'tool', 'decision', 'question', 'end'];
 const KEYWORD_PATTERN = new RegExp(`\\b(${KEYWORDS.join('|')})\\b`, 'gi');
 
 export class WorkflowGraphError extends Error {}
@@ -90,7 +90,8 @@ export function commandsToGraph(commands: Command[]): WorkflowGraph {
 
       case 'agent':
       case 'tool':
-      case 'decision': {
+      case 'decision':
+      case 'question': {
         if (!startId) throw new WorkflowGraphError(`Heard "${keyword}" before "start"`);
         mainStep += 1;
         const id = nextId(keyword);

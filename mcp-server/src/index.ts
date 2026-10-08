@@ -13,6 +13,7 @@ const COMMAND_LANGUAGE_DOC = `Workflows are described as a flat stream of keywor
   agent <label>       a sequential step, chained after the previous step
   tool <label>        same as agent, semantically a tool-call step
   decision <label>     same as agent, semantically a branch/decision step
+  question <label>     same as agent, semantically a Q&A gate — ask before proceeding
   subagent <label>     a child spawned off the immediately preceding agent/tool/decision step (repeat for siblings)
   end <label>          closes the workflow (exactly one, must come last)
 
@@ -32,7 +33,7 @@ server.registerTool(
   {
     title: 'Describe workflow command language',
     description:
-      'Explains the keyword command language used to build workflow graphs (start/agent/subagent/tool/decision/end). Call this first if unsure how to phrase a transcript.',
+      'Explains the keyword command language used to build workflow graphs (start/agent/subagent/tool/decision/question/end). Call this first if unsure how to phrase a transcript.',
     inputSchema: {},
   },
   async () => ({

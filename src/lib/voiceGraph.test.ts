@@ -54,6 +54,21 @@ describe('commandsToGraph', () => {
     expect(graph.edges).toContainEqual(expect.objectContaining({ source: n1.id, target: n2.id }));
   });
 
+  it('treats question as a sequential main step between start and agent', () => {
+    const commands = tokenizeCommands('start auth work question which provider agent implement oauth end');
+    expect(commands.map((c) => c.keyword)).toEqual(['start', 'question', 'agent', 'end']);
+    const graph = commandsToGraph(commands);
+    expect(graph.nodes.map((n) => n.data.kind)).toEqual(['start', 'question', 'agent', 'end']);
+    const [start, question, agent, end] = graph.nodes;
+    expect(graph.edges).toContainEqual(expect.objectContaining({ source: start.id, target: question.id }));
+    expect(graph.edges).toContainEqual(expect.objectContaining({ source: question.id, target: agent.id }));
+    expect(graph.edges).toContainEqual(expect.objectContaining({ source: agent.id, target: end.id }));
+  });
+
+  it('rejects question before start', () => {
+    expect(() => commandsToGraph(tokenizeCommands('question which provider'))).toThrow(VoiceGraphError);
+  });
+
   it('rejects a second start', () => {
     expect(() => commandsToGraph(tokenizeCommands('start a start b'))).toThrow(VoiceGraphError);
   });

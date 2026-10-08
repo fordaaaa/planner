@@ -7,6 +7,8 @@ interface ToolbarProps {
   onClear: () => void;
   onToggleVoice: () => void;
   voiceOpen: boolean;
+  shellOpen?: boolean;
+  onToggleShell?: () => void;
   pmActive?: boolean;
   onTogglePm?: () => void;
   blocksOpen?: boolean;
@@ -31,6 +33,14 @@ function MicIcon() {
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <rect x="5" y="1" width="4" height="7" rx="2" stroke="currentColor" strokeWidth="1.3" />
       <path d="M3 7a4 4 0 0 0 8 0M7 11v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function TerminalIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2.5 4.5 5.5 7l-3 2.5M7 10.5h4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -131,7 +141,7 @@ function MarkdownIcon() {
   );
 }
 
-export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen, pmActive, onTogglePm, blocksOpen, onToggleBlocks, onExportMarkdown, onExportPrompt, onCopyChain, persistOn, onTogglePersist }: ToolbarProps) {
+export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen, shellOpen, onToggleShell, pmActive, onTogglePm, blocksOpen, onToggleBlocks, onExportMarkdown, onExportPrompt, onCopyChain, persistOn, onTogglePersist }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -150,6 +160,15 @@ export default function Toolbar({ onAddNode, onExport, onImport, onClear, onTogg
           >
             <MicIcon />
             <span className="btn-label">Voice build</span>
+          </button>
+          <button
+            onClick={onToggleShell}
+            className={shellOpen ? 'primary' : ''}
+            aria-pressed={shellOpen}
+            title="Build the workflow from a command shell"
+          >
+            <TerminalIcon />
+            <span className="btn-label">Shell</span>
           </button>
           <button
             onClick={onTogglePm}
