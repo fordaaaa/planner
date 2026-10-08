@@ -1,43 +1,44 @@
-# React + TypeScript + Vite
+# Planner
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Visual workflow planner for AI agent runs. Chain prompts into an executable plan, then hand it to any coding agent.
 
-Currently, two official plugins are available:
+**Live site: https://planner.foworda.workers.dev/**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What it does
 
-## React Compiler
+- **Canvas** — drag-and-drop plan graph (`start → agent → subagent/tool/decision → end`) with auto-chaining, import/export JSON, and localStorage persistence.
+- **Building blocks** — 14 copy-paste-ready prompt blocks distilled from [ECC](https://github.com/affaan-m/ecc) (Everything Claude Code) and edited to work standalone: triage, release scope, PRD, plan, architect, TDD build, build fix, fresh-eyes review, security audit, verify gate, E2E, refactor, docs, ship. One click inserts a step pre-filled with its prompt.
+- **Workflow templates** — pre-built chains: spec-plan trio, full ECC feature loop, fix loop, harden & ship. Review steps fork as subagents off the build step.
+- **Plan.md export + copy prompt chain** — download the plan as markdown or copy a numbered step-by-step prompt sequence straight into an agent session.
+- **Voice build** — speak (or type) keyword commands (`start … agent … subagent … end`) and compile them to a graph.
+- **Projects / PM** — Plane.so-lite issue tracking with a 6-column kanban the AI can drive via MCP (`npm run pm:serve`, then the Projects button).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## MCP server
 
-## Expanding the Oxlint configuration
+`mcp-server/` lets an AI build and manage workflows without a browser. Same keyword command language as voice build, plus the blocks catalogue:
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- `describe_command_language`, `build_workflow(name, transcript)`, `list_workflows`, `get_workflow`, `delete_workflow`
+- `list_building_blocks`, `get_block_prompt(id)`, `list_workflow_templates`, `template_transcript(id)` (renders a template straight into `build_workflow`)
+- `pm_*` tools for issue tracking
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+cd mcp-server
+npm install
+npm run build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Point an MCP client at `node <path>/mcp-server/dist/index.js`. `src/lib/blocks.ts` is the single source of truth for prompts — refresh the server copy with `npm run sync:blocks` (runs automatically on build).
 
-## Projects / PM
+## Develop
 
-Plane.so-lite issue tracking the AI can drive via MCP. Run `npm run pm:serve`, then open the Projects button in the app toolbar for project cards, the 6-column kanban with drag-drop, and issue drawers; the view auto-syncs every 5s and shows an offline banner if the pm server isn't running.
-
-The AI uses the `pm_*` MCP tools (`pm_list_projects`, `pm_create_project`, `pm_board`, `pm_create_issue`, `pm_update_issue`, `pm_list_issues`, `pm_get_issue`, `pm_log`); data persists as JSON under `~/.planner-projects/` (`PLANNER_PROJECTS_DIR` override, API port via `PLANNER_PM_PORT`, default `7808`).
-
+```bash
+npm install
+npm run dev      # local dev server
+npm run test     # vitest
+npm run lint     # oxlint
+npm run build    # typecheck + production build
 ```
-# conceptually, via MCP:
-pm_create_issue(project="website", title="Add offline banner", status="todo")
-```
+
+## Deploy
+
+Pushes to `main` auto-deploy the `dist/` build to Cloudflare Workers via `.github/workflows/deploy.yml` (needs `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` secrets). Live at https://planner.foworda.workers.dev/.

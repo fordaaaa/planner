@@ -7,9 +7,10 @@
     "planner-mcp-server": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "sync:blocks": "node -e \"require('fs').copyFileSync('../src/lib/blocks.ts','src/lib/blocks.ts')\"",
+    "build": "npm run sync:blocks && tsc",
     "start": "node dist/index.js",
-    "pm:serve": "tsc && node dist/pmServe.js"
+    "pm:serve": "npm run sync:blocks && tsc && node dist/pmServe.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

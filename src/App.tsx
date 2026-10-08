@@ -11,6 +11,9 @@ import {
 import Canvas from './components/Canvas';
 import Toolbar from './components/Toolbar';
 import NodeInspector from './components/NodeInspector';
+import BlocksPanel from './components/BlocksPanel';
+import { BLOCK_MAP, TEMPLATE_MAP } from './lib/blocks';
+import { downloadMarkdown, graphToPromptChain } from './lib/planExport';
 import VoicePanel from './components/VoicePanel';
 import ToastStack from './components/ToastStack';
 import ConfirmModal from './components/ConfirmModal';
@@ -45,6 +48,7 @@ function App() {
   const [edges, setEdges] = useState<Edge[]>(STARTER_GRAPH.edges);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [blocksOpen, setBlocksOpen] = useState(true);
   const [confirmClear, setConfirmClear] = useState(false);
   const [view, setView] = useState<'canvas' | 'pm'>('canvas');
   const [pmSlug, setPmSlug] = useState<string | null>(null);
@@ -105,6 +109,140 @@ function App() {
     addChainedNode(selectedId);
   }, [addChainedNode, selectedId]);
 
+  const isPristineStarter = useCallback(
+    (n: WorkflowNode) =>
+      nodes.length === 1 && n.id === nodes[0]?.id && n.data.label === 'Start' && !n.data.description,
+    [nodes],
+  );
+
+  const handleInsertBlock = useCallback(
+    (blockId: string) => {
+      const block = BLOCK_MAP[blockId];
+      if (!block) return;
+      const anchor = selectedId ? nodes.find((n) => n.id === selectedId) : null;
+      const bottom = nodes.reduce((acc, n) => (n.position.y > acc.position.y ? n : acc), nodes[0]);
+
+      // Reuse the pristine Start node instead of duplicating it.
+      if (block.kind === 'start' && bottom && isPristineStarter(bottom) && !anchor) {
+        setNodes((nds) =>
+          nds.map((n) =>
+            n.id === bottom.id
+              ? { ...n, data: { ...n.data, label: block.label, kind: block.kind, description: block.prompt } }
+              : n,
+          ),
+        );
+        setSelectedId(bottom.id);
+        pushToast(`“${block.title}” applied to Start`, 'success');
+        return;
+      }
+
+      const parent = anchor ?? bottom ?? null;
+      const id = nextNodeId();
+      const position = parent
+        ? block.kind === 'subagent'
+          ? { x: parent.position.x + 220, y: parent.position.y + 90 }
+          : { x: parent.position.x, y: parent.position.y + 160 }
+        : { x: 250, y: 50 };
+      const newNode: WorkflowNode = {
+        id,
+        type: 'agent',
+        position,
+        data: { label: block.label, kind: block.kind, description: block.prompt },
+      };
+      setNodes((nds) => [...nds, newNode]);
+      if (parent) {
+        setEdges((eds) => [
+          ...eds,
+          {
+            id: `edge-${id}`,
+            source: parent.id,
+            target: id,
+            className: block.kind === 'subagent' ? 'spawn-edge' : undefined,
+          },
+        ]);
+      }
+      setSelectedId(id);
+      pushToast(`Added “${block.title}”`, 'success');
+    },
+    [nodes, selectedId, isPristineStarter, pushToast],
+  );
+
+  const handleInsertTemplate = useCallback(
+    (templateId: string) => {
+      const template = TEMPLATE_MAP[templateId];
+      if (!template) return;
+      const anchor = selectedId ? nodes.find((n) => n.id === selectedId) : null;
+      const bottom = nodes.length
+        ? nodes.reduce((acc, n) => (n.position.y > acc.position.y ? n : acc), nodes[0])
+        : null;
+      let cursor = anchor ?? bottom;
+      let cursorY = cursor ? cursor.position.y : -110;
+      const cursorX = cursor ? cursor.position.x : 250;
+
+      // Reuse pristine Start node when the template opens with a start-kind block.
+      let firstStepSkipped = false;
+      const newNodes: WorkflowNode[] = [];
+      const newEdges: Edge[] = [];
+      let lastMainId: string | null = cursor ? cursor.id : null;
+      let lastMainY = cursorY;
+      let lastMainX = cursorX;
+      let forkCount = 0;
+
+      template.steps.forEach((step, i) => {
+        const block = BLOCK_MAP[step.blockId];
+        if (!block) return;
+        if (i === 0 && block.kind === 'start' && cursor && isPristineStarter(cursor) && !anchor) {
+          // Rewrite starter in place.
+          const starterId = cursor.id;
+          setNodes((nds) =>
+            nds.map((n) =>
+              n.id === starterId
+                ? { ...n, data: { ...n.data, label: block.label, kind: block.kind, description: block.prompt } }
+                : n,
+            ),
+          );
+          lastMainId = starterId;
+          lastMainY = cursor.position.y;
+          lastMainX = cursor.position.x;
+          firstStepSkipped = true;
+          return;
+        }
+        const id = nextNodeId();
+        if (step.fork && lastMainId) {
+          newNodes.push({
+            id,
+            type: 'agent',
+            position: { x: lastMainX + 260 + forkCount * 220, y: lastMainY + 90 },
+            data: { label: block.label, kind: block.kind, description: block.prompt },
+          });
+          newEdges.push({ id: `edge-${id}`, source: lastMainId, target: id, className: 'spawn-edge' });
+          forkCount += 1;
+        } else {
+          lastMainY += 160;
+          newNodes.push({
+            id,
+            type: 'agent',
+            position: { x: lastMainX, y: lastMainY },
+            data: { label: block.label, kind: block.kind, description: block.prompt },
+          });
+          if (lastMainId) newEdges.push({ id: `edge-${id}`, source: lastMainId, target: id });
+          lastMainId = id;
+          forkCount = 0;
+        }
+      });
+
+      if (newNodes.length) {
+        setNodes((nds) => [...nds, ...newNodes]);
+        setEdges((eds) => [...eds, ...newEdges]);
+        setSelectedId(newNodes[newNodes.length - 1].id);
+      } else if (firstStepSkipped && cursor) {
+        setSelectedId(cursor.id);
+      }
+      pushToast(`Inserted “${template.title}” (${template.steps.length} steps)`, 'success');
+    },
+    [nodes, selectedId, isPristineStarter, pushToast],
+  );
+
   const handleNodeDataChange = useCallback((id: string, data: Partial<WorkflowNodeData>) => {
     setNodes((nds) =>
       nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...data } } : n)),
@@ -158,8 +296,27 @@ function App() {
     [pushToast],
   );
 
+  const handleExportMarkdown = useCallback(() => {
+    downloadMarkdown({ nodes, edges });
+    pushToast('Plan.md exported', 'success');
+  }, [nodes, edges, pushToast]);
+
+  const handleCopyChain = useCallback(async () => {
+    const text = graphToPromptChain({ nodes, edges });
+    if (!text) {
+      pushToast('No prompts to copy yet', 'info');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      pushToast('Prompt chain copied', 'success');
+    } catch {
+      pushToast('Copy failed — clipboard unavailable', 'error');
+    }
+  }, [nodes, edges, pushToast]);
+
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
-  const showOnboarding = nodes.length === 1 && edges.length === 0 && !voiceOpen;
+  const showOnboarding = nodes.length === 1 && edges.length === 0 && !voiceOpen && !blocksOpen;
 
   return (
     <div className="app">
@@ -172,6 +329,10 @@ function App() {
         voiceOpen={voiceOpen}
         pmActive={view === 'pm'}
         onTogglePm={() => setView((v) => (v === 'pm' ? 'canvas' : 'pm'))}
+        blocksOpen={blocksOpen}
+        onToggleBlocks={() => setBlocksOpen((v) => !v)}
+        onExportMarkdown={handleExportMarkdown}
+        onCopyChain={handleCopyChain}
       />
       {view === 'pm' ? (
         pmSlug ? (
@@ -181,6 +342,14 @@ function App() {
         )
       ) : (
       <div className="app-body">
+        {blocksOpen && (
+          <BlocksPanel
+            onInsertBlock={handleInsertBlock}
+            onInsertTemplate={handleInsertTemplate}
+            onClose={() => setBlocksOpen(false)}
+            anchorLabel={selectedNode?.data.label ?? null}
+          />
+        )}
         <Canvas
           nodes={nodes}
           edges={edges}

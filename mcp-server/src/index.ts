@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { transcriptToGraph, WorkflowGraphError } from './lib/workflowGraph.js';
 import { deleteWorkflow, listWorkflows, loadWorkflow, saveWorkflow, workflowsDir, WorkflowNotFoundError } from './lib/store.js';
 import { registerPmTools } from './lib/pmTools.js';
+import { registerBlockTools } from './lib/blockTools.js';
 
 const COMMAND_LANGUAGE_DOC = `Workflows are described as a flat stream of keyword commands, each followed by a short label:
 
@@ -128,4 +129,5 @@ server.registerTool(
 
 const transport = new StdioServerTransport();
 registerPmTools(server);
+registerBlockTools(server);
 await server.connect(transport);

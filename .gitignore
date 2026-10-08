@@ -25,3 +25,6 @@ AGENTS.md
 *.njsproj
 *.sln
 *.sw?
+
+# Generated: synced from ../../src/lib/blocks.ts via npm run sync:blocks
+mcp-server/src/lib/blocks.ts
