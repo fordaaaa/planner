@@ -145,6 +145,23 @@ Rules: batch everything into ONE round — no drip-feeding follow-ups. If I skip
 End with: Answers (verbatim) + Assumptions made + What this unblocks next.`,
   },
   {
+    id: 'research',
+    title: 'Research — Adopt Before You Build',
+    category: 'Spec & Plan',
+    kind: 'agent',
+    label: 'Research [need]',
+    blurb: 'Search existing solutions first. Adopt, extend, or build — with evidence.',
+    prompt: `Before writing any code for [need + stack/constraints], research what already exists.
+
+1. Need analysis: the exact capability required, must-haves vs nice-to-haves, license + maintenance constraints (actively maintained? docs?).
+2. Search in parallel: package registries (npm/PyPI/etc.), this repo's own utilities, docs/MCP servers available here, GitHub + web for established approaches. Report honestly which channels you actually checked.
+3. Score candidates: functionality fit, maintenance health, community/docs, license, dependency weight.
+4. Decide per need: ADOPT as-is / EXTEND/wrap / BUILD custom — with one-line justification each.
+
+Rules: never propose a custom build without naming the existing options you rejected and why. No implementation code.
+End with a table: need | candidates considered | decision | rationale.`,
+  },
+  {
     id: 'architect',
     title: 'Architect — Design & Trade-offs',
     category: 'Spec & Plan',
@@ -231,6 +248,41 @@ Severity: CRITICAL (fix before merge: secrets, injection, auth bypass, SSRF, tra
 End with: counts, whether anything needs immediate secret rotation, and top 3 fixes ordered by risk.`,
   },
   {
+    id: 'pentest',
+    title: 'Pentest — Bounty Hunt',
+    category: 'Review & Verify',
+    kind: 'subagent',
+    label: 'Pentest [scope]',
+    blurb: 'Remotely reachable exploits only. Prove user-control → sink, then report.',
+    prompt: `Hunt [scope: repo/area] for EXPLOITABLE, remotely reachable vulnerabilities — not a best-practices review. Don't change code; prove and report.
+
+1. Scope first: what's in/out (program rules, SECURITY.md, disclosure channel if any).
+2. Entrypoints only: HTTP handlers, uploads, webhooks, parsers, background jobs, integration endpoints. Skip CLI-only code, tests, demos, fixtures, vendored code.
+3. For each candidate, trace user-controlled input to a real sink end-to-end. Drop anything without a network/user-controlled route: local-only deserialization, hardcoded shell commands, lone missing headers, theoretical rate-limit gripes, self-XSS.
+4. Confirm with the smallest safe PoC that proves impact without damage.
+
+Priority patterns: SSRF via user URLs, auth bypass in guards/middleware, SQLi in reachable endpoints, command injection in handlers, path traversal in file paths, upload-to-RCE, auto-triggered XSS.
+End with one report per finding: Description + Vulnerable code (file:line + snippet) + Reachability (entry → sink) + PoC + Impact + Fix. Zero proved findings is a valid result.`,
+  },
+  {
+    id: 'silent',
+    title: 'Silent Failures — Hunt',
+    category: 'Review & Verify',
+    kind: 'subagent',
+    label: 'Silent failures in [area]',
+    blurb: 'Swallowed errors, lying fallbacks, lost context. Zero tolerance pass.',
+    prompt: `Hunt [area] for silent failures — code that looks fine while hiding real breakage. Report only, no fixes yet.
+
+Targets:
+1. Swallowed errors: empty catch blocks, errors converted to null/[] with no context, log-and-forget.
+2. Lying fallbacks: defaults that mask failure (.catch(() => []), fallback data indistinguishable from real data), "graceful" paths that make downstream bugs undiagnosable.
+3. Lost context: dropped stack traces, generic rethrows, wrong log severity, logs without the ids needed to trace the request.
+4. Missing guards: no timeout/error handling on network/file/DB paths, no rollback around transactional work, unhandled async rejections.
+
+For each finding: file:line, severity, the failure it hides, blast radius if it triggers in prod, recommended fix.
+Have zero tolerance, but only report what you can point at — no hypotheticals.`,
+  },
+  {
     id: 'verify',
     title: 'Verify — Full Gate',
     category: 'Review & Verify',
@@ -267,6 +319,39 @@ For long sessions, repeat this gate after every major change.`,
 Deliver: journey list, files created, command output, how to view the HTML report.`,
   },
   {
+    id: 'coverage',
+    title: 'Coverage — Fill the Gaps',
+    category: 'Review & Verify',
+    kind: 'agent',
+    label: 'Coverage for [area]',
+    blurb: 'Measure, list worst-first files, generate the missing tests to 80%+.',
+    prompt: `Close the test-coverage gaps in [area]. Target: 80%+ lines and branches.
+
+1. Detect the runner ([npm test / pytest / go test / cargo test] + coverage flags) and run coverage. List files BELOW 80%, worst first.
+2. Per file, identify: untested functions, missing branches (if/else, switch, error paths), and dead code inflating the denominator (flag for removal, don't test it).
+3. Generate missing tests in priority order: happy path → error handling (invalid input, failures) → edge cases (empty, null, boundaries) → remaining branches.
+4. Rules: follow existing test patterns (location, style, mocks); mock external deps (DB, APIs, FS); independent tests, no shared mutable state; descriptive names (test_create_user_with_duplicate_email_returns_409).
+5. Verify: full suite green, re-run coverage, report before → after per file.
+
+End with: coverage delta table, files still below target + why, command output as evidence.`,
+  },
+  {
+    id: 'perf',
+    title: 'Perf — Find the Bottlenecks',
+    category: 'Review & Verify',
+    kind: 'agent',
+    label: 'Perf pass [area]',
+    blurb: 'Profile first, fix with numbers. No blind optimization.',
+    prompt: `Make [area / flow] faster with evidence. No optimization without a measurement.
+
+1. Baseline first: profile the hot path ([Lighthouse / bundle analyzer / React Profiler / EXPLAIN ANALYZE / profiler for this stack]) and record numbers: load/latency, bundle size, render counts, query times. State the target (e.g. LCP < 2.5s, p95 < 200ms).
+2. Ranked hit list, worst first: algorithmic waste (N+1 queries, O(n²)), bundle bloat (un-split routes, whole-library imports), render churn (missing memoization, effects), missing cache layers, unindexed/scan-heavy queries, leaks (listeners, timers, subscriptions).
+3. Fix ONE bottleneck at a time, re-measure after each. Keep behavior identical — this is not a refactor or feature pass. Run tests after every change.
+4. Stop when targets are met or remaining wins cost more than they're worth — say so explicitly.
+
+End with: before → after table per fix (metric, delta, method), what you deliberately left alone + why.`,
+  },
+  {
     id: 'refactor',
     title: 'Refactor — Safe Cleanup',
     category: 'Ship',
@@ -296,6 +381,22 @@ Report: bytes/lines removed, bundle delta if relevant, batches committed, tests+
 3. Format: overview, quickstart (working commands), architecture sketch, module table, data flow, config/env table.
 
 Report: files updated, drift fixed (before → after), anything intentionally left undocumented + why.`,
+  },
+  {
+    id: 'prod-audit',
+    title: 'Prod Audit — Will It Survive Launch',
+    category: 'Ship',
+    kind: 'subagent',
+    label: 'Prod audit [release]',
+    blurb: 'Evidence-based prod risk pass: surface, changes, boundaries, rollback.',
+    prompt: `Audit whether [release/version] is safe to ship. Evidence only — read the repo, CI, and deployment config. Don't change code; report risks.
+
+1. Release surface: what actually runs in prod (services, jobs, migrations, public routes)? What's new since the last known-good release (git log, diff stat)?
+2. Boundary inspection on what EXISTS here: auth/session handling, data access + migrations (reversible? backfilled?), payments/webhooks (idempotent? verified?), background jobs (retries? dead-letter?), secrets/env (documented? present in hosting?), AI/external calls (timeouts? cost caps? fallbacks?).
+3. CI + safety nets: suite green? migrations tested? rollback path (revert commit? down migration? previous deploy one click away)? monitoring/alerts for the new surface?
+4. Verdict per risk: BLOCKS launch / SHOULD fix / note — each with file:line or config ref and the smallest check that would clear it.
+
+Not a compliance certification — engineering triage. If the repo has no deployment surface (library, docs-only), say so and audit packaging/release readiness instead.`,
   },
   {
     id: 'ship',

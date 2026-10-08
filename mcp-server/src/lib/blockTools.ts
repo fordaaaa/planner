@@ -24,7 +24,7 @@ export function registerBlockTools(server: McpServer): void {
     {
       title: 'List prompt building blocks',
       description:
-        'Lists the 15 reusable prompt blocks (triage, release-scope, PRD, question, plan, architect, TDD, build-fix, review, security, verify, e2e, refactor, docs, ship). Each block is a pre-written agent prompt distilled from ECC and edited to work standalone. Use get_block_prompt for the full text, or build_workflow with a transcript of block labels.',
+        'Lists the 21 reusable prompt blocks (triage, release-scope, PRD, question, research, plan, architect, TDD, build-fix, review, security, pentest, silent-failures, verify, e2e, coverage, perf, refactor, docs, prod-audit, ship). Each block is a pre-written agent prompt distilled from ECC and edited to work standalone. Use get_block_prompt for the full text, or build_workflow with a transcript of block labels.',
       inputSchema: {},
     },
     async () => ({
