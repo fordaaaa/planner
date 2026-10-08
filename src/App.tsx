@@ -316,7 +316,27 @@ function App() {
   }, [nodes, edges, pushToast]);
 
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
-  const showOnboarding = nodes.length === 1 && edges.length === 0 && !voiceOpen && !blocksOpen;
+  const showOnboarding = nodes.length === 1 && edges.length === 0 && !voiceOpen;
+
+  // Keyboard shortcuts: Delete removes the selected node, Escape closes
+  // voice-first then deselects. Ignored while typing in a field.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)) {
+        return;
+      }
+      if (e.key === 'Escape') {
+        if (voiceOpen) setVoiceOpen(false);
+        else setSelectedId(null);
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+        e.preventDefault();
+        handleDeleteNode(selectedId);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedId, voiceOpen, handleDeleteNode]);
 
   return (
     <div className="app">
@@ -360,11 +380,11 @@ function App() {
           onAddChild={addChainedNode}
         >
           {showOnboarding && <OnboardingHint />}
+          {voiceOpen && view === 'canvas' && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}
         </Canvas>
         <NodeInspector node={selectedNode} onChange={handleNodeDataChange} onDelete={handleDeleteNode} />
       </div>
       )}
-      {voiceOpen && view === 'canvas' && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}
       {confirmClear && (
         <ConfirmModal
           title="Clear the canvas?"

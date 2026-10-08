@@ -242,6 +242,7 @@
   background: var(--panel);
   padding: 10px 14px;
   min-width: 160px;
+  max-width: 250px;
   text-align: left;
   box-shadow: var(--shadow);
   transition: border-color 0.12s ease, box-shadow 0.15s ease, transform 0.15s ease;
@@ -360,6 +361,11 @@
 }
 
 .agent-node-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
   font-size: 12px;
   color: var(--text);
   margin-top: 4px;
@@ -367,9 +373,11 @@
 
 .voice-panel {
   position: absolute;
-  left: 20px;
-  right: 308px;
-  bottom: 20px;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  max-width: 620px;
+  margin: 0 auto;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--panel);
@@ -689,12 +697,12 @@
 
 .onboarding-hint {
   position: absolute;
-  top: 24px;
-  right: 24px;
+  top: 20px;
+  left: 20px;
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  max-width: 260px;
+  max-width: 280px;
   animation: hint-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.3s backwards;
   pointer-events: none;
 }
@@ -914,4 +922,104 @@
 .inspector-row {
   display: flex;
   gap: 8px;
+}
+
+/* Visible keyboard focus for all buttons (inputs already have focus rings). */
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Narrower side panels before switching to stacked layout. */
+@media (max-width: 1150px) {
+  .inspector {
+    width: 240px;
+    padding: 16px;
+  }
+
+  .blocks-panel {
+    width: 252px;
+    padding: 12px;
+  }
+}
+
+/* Stacked layout: canvas on top, panels scroll below it. */
+@media (max-width: 900px) {
+  .app-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .canvas-wrap {
+    order: -1;
+    flex: none;
+    min-height: 48svh;
+  }
+
+  .canvas-wrap .react-flow__minimap {
+    display: none;
+  }
+
+  .blocks-panel {
+    width: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    max-height: 38svh;
+  }
+
+  .inspector {
+    width: auto;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    max-height: 44svh;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .toolbar-divider {
+    display: none;
+  }
+
+  .voice-panel {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .toast-stack {
+    left: 12px;
+    right: 12px;
+  }
+
+  .toast {
+    max-width: none;
+  }
+
+  .modal-card {
+    width: calc(100vw - 64px);
+    max-width: 320px;
+  }
+}
+
+/* Icon-only toolbar buttons on phones. Labels stay as tooltips. */
+@media (max-width: 700px) {
+  .toolbar-actions button .btn-label {
+    display: none;
+  }
+
+  .toolbar-actions button {
+    padding: 7px 9px;
+  }
+
+  .toolbar-title {
+    font-size: 14px;
+  }
+
+  .onboarding-hint {
+    max-width: 220px;
+  }
 }

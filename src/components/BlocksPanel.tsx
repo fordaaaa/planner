@@ -48,6 +48,16 @@ export default function BlocksPanel({ onInsertBlock, onInsertTemplate, onClose, 
     });
   }, [query, category]);
 
+  const filteredTemplates = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return WORKFLOW_TEMPLATES;
+    return WORKFLOW_TEMPLATES.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) ||
+        t.description.toLowerCase().includes(q),
+    );
+  }, [query]);
+
   return (
     <div className="blocks-panel">
       <div className="blocks-header">
@@ -71,13 +81,14 @@ export default function BlocksPanel({ onInsertBlock, onInsertTemplate, onClose, 
 
       <div className="blocks-section">
         <h4>Workflow templates</h4>
-        {WORKFLOW_TEMPLATES.map((t) => (
+        {filteredTemplates.map((t) => (
           <div key={t.id} className="template-row">
             <div className="template-title">{t.title}</div>
             <p className="block-blurb">{t.description}</p>
             <button onClick={() => onInsertTemplate(t.id)}>Insert {t.steps.length} steps</button>
           </div>
         ))}
+        {filteredTemplates.length === 0 && <p className="block-blurb">No templates match “{query}”.</p>}
       </div>
 
       <div className="blocks-filter">
