@@ -76,6 +76,15 @@ export default function NodeInspector({ node, onChange, onDelete, onDuplicate }:
         <button onClick={() => onDuplicate(node.id)}>Duplicate</button>
       </div>
 
+      <label className="inspector-check">
+        <input
+          type="checkbox"
+          checked={node.data.done === true}
+          onChange={(e) => onChange(node.id, { done: e.target.checked })}
+        />
+        Done
+      </label>
+
       <label>
         Apply building block
         <select

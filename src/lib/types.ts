@@ -6,6 +6,7 @@ export interface WorkflowNodeData extends Record<string, unknown> {
   label: string;
   kind: NodeKind;
   description: string;
+  done?: boolean;
 }
 
 export type WorkflowNode = Node<WorkflowNodeData>;

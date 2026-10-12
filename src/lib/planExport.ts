@@ -9,7 +9,8 @@ export function graphToMarkdown(graph: WorkflowGraph): string {
   const nodes = sortedNodes(graph);
   const lines: string[] = ['# Workflow plan', ''];
   nodes.forEach((n, i) => {
-    lines.push(`## ${i + 1}. [${n.data.kind}] ${n.data.label}`);
+    const box = n.data.done === true ? '[x]' : '[ ]';
+    lines.push(`## ${box} ${i + 1}. [${n.data.kind}] ${n.data.label}`);
     lines.push('');
     if (n.data.description?.trim()) {
       lines.push(n.data.description.trim());
@@ -46,18 +47,27 @@ export function downloadMarkdown(graph: WorkflowGraph): void {
 export function graphToPromptChain(graph: WorkflowGraph): string {
   const nodes = sortedNodes(graph).filter((n) => n.data.description?.trim());
   return nodes
-    .map((n, i) => `### Step ${i + 1} — ${n.data.label} [${n.data.kind}]\n\n${n.data.description.trim()}`)
+    .map(
+      (n, i) =>
+        `### Step ${i + 1} — ${n.data.label} [${n.data.kind}]${n.data.done === true ? ' (done)' : ''}\n\n${n.data.description.trim()}`,
+    )
     .join('\n\n---\n\n');
 }
 
 /** Single paste-ready prompt file: intro + the full step chain. */
 export function graphToPrompt(graph: WorkflowGraph): string {
   const chain = graphToPromptChain(graph);
-  const count = sortedNodes(graph).filter((n) => n.data.description?.trim()).length;
+  const withPrompts = sortedNodes(graph).filter((n) => n.data.description?.trim());
+  const count = withPrompts.length;
+  const doneCount = withPrompts.filter((n) => n.data.done === true).length;
+  const progress =
+    doneCount > 0
+      ? ` ${doneCount} of ${count} steps are already marked done — start from the first one that isn't.`
+      : '';
   return [
     '# Agent prompt',
     '',
-    `Run the ${count} step${count === 1 ? '' : 's'} below in order. Complete each step fully — including its tests and checks — before moving to the next. If a step is unclear, ask before guessing.`,
+    `Run the ${count} step${count === 1 ? '' : 's'} below in order. Complete each step fully — including its tests and checks — before moving to the next. If a step is unclear, ask before guessing.${progress}`,
     '',
     '---',
     '',

@@ -12,6 +12,7 @@ import Canvas from './components/Canvas';
 import Toolbar from './components/Toolbar';
 import NodeInspector from './components/NodeInspector';
 import BlocksPanel from './components/BlocksPanel';
+import ProgressStrip from './components/ProgressStrip';
 import ShellPanel, { type ShellResult } from './components/ShellPanel';
 import ConsentBanner from './components/ConsentBanner';
 import { BLOCK_MAP, BLOCKS, TEMPLATE_MAP, WORKFLOW_TEMPLATES } from './lib/blocks';
@@ -404,7 +405,7 @@ function App() {
         blocks: BLOCKS.map((b) => ({ id: b.id, title: b.title })),
         templates: WORKFLOW_TEMPLATES.map((t) => ({ id: t.id, title: t.title })),
       };
-      const action = parseShellLine(line, catalogs);
+      const action = parseShellLine(line, catalogs, nodes);
       switch (action.type) {
         case 'empty':
           return { lines: [] };
@@ -419,6 +420,9 @@ function App() {
           if (!block) return { lines: [`? unknown block`] };
           return { lines: [`# ${block.title} [${block.kind}]`, '', ...block.prompt.split('\n')] };
         }
+        case 'mark-done':
+          handleNodeDataChange(action.nodeId, { done: action.done });
+          return { lines: [`${action.done ? '✓' : '○'} ${action.label}`] };
         case 'list-steps':
           return { lines: formatStepList(nodes) };
         case 'list-blocks':
@@ -467,6 +471,8 @@ function App() {
     );
   }, [nodes, edges, pushToast]);
   const showOnboarding = nodes.length === 1 && edges.length === 0 && !voiceOpen;
+
+  const doneCount = nodes.filter((n) => n.data.done === true).length;
 
   // Keyboard shortcuts: Delete removes the selected node, Escape closes
   // voice-first then deselects. Ignored while typing in a field.
@@ -543,6 +549,7 @@ function App() {
           onAddChild={addChainedNode}
         >
           {showOnboarding && <OnboardingHint />}
+          <ProgressStrip done={doneCount} total={nodes.length} />
           {voiceOpen && view === 'canvas' && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}
           {shellOpen && view === 'canvas' && <ShellPanel onRun={handleShell} onClose={() => setShellOpen(false)} />}
         </Canvas>

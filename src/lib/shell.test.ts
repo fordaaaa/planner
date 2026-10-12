@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatStepList, parseShellLine, resolveCatalogId, SHELL_HELP_LINES } from './shell';
+import { formatStepList, parseShellLine, resolveCatalogId, resolveStepRef, SHELL_HELP_LINES } from './shell';
 
 const CATALOGS = {
   blocks: [
@@ -90,7 +90,64 @@ describe('shell helpers', () => {
           data: { label: 'First', kind: 'start', description: '' },
         },
       ]),
-    ).toEqual(['1. [start] First', '2. [agent] Second']);
+    ).toEqual(['1. [ ] [start] First', '2. [ ] [agent] Second']);
     expect(formatStepList([])).toEqual(['(no steps yet)']);
+  });
+
+  it('marks done steps in the list', () => {
+    expect(
+      formatStepList([
+        {
+          id: 'a',
+          type: 'agent',
+          position: { x: 0, y: 0 },
+          data: { label: 'Shipped', kind: 'end', description: '', done: true },
+        },
+      ]),
+    ).toEqual(['1. [x] [end] Shipped']);
+  });
+});
+
+describe('done and undone', () => {
+  const NODES = [
+    {
+      id: 'a',
+      type: 'agent',
+      position: { x: 0, y: 0 },
+      data: { label: 'Write PRD', kind: 'start', description: '' },
+    },
+    {
+      id: 'b',
+      type: 'agent',
+      position: { x: 0, y: 160 },
+      data: { label: 'Build it', kind: 'agent', description: '' },
+    },
+  ] as const;
+
+  it('resolves steps by number, id, or unique label', () => {
+    const nodes = [...NODES] as unknown as Parameters<typeof resolveStepRef>[1];
+    expect(resolveStepRef('1', nodes)?.id).toBe('a');
+    expect(resolveStepRef('b', nodes)?.id).toBe('b');
+    expect(resolveStepRef('build', nodes)?.id).toBe('b');
+    expect(resolveStepRef('zzz', nodes)).toBeNull();
+    expect(resolveStepRef('', nodes)).toBeNull();
+  });
+
+  it('parses done and undone with usage hints', () => {
+    const nodes = [...NODES] as unknown as Parameters<typeof parseShellLine>[2];
+    expect(parseShellLine('done 2', CATALOGS, nodes)).toEqual({
+      type: 'mark-done',
+      nodeId: 'b',
+      done: true,
+      label: 'Build it',
+    });
+    expect(parseShellLine('undone prd', CATALOGS, nodes)).toEqual({
+      type: 'mark-done',
+      nodeId: 'a',
+      done: false,
+      label: 'Write PRD',
+    });
+    expect(parseShellLine('done', CATALOGS, nodes).type).toBe('unknown');
+    expect(parseShellLine('done zzz', CATALOGS, nodes).type).toBe('unknown');
   });
 });
