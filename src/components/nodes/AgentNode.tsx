@@ -17,18 +17,19 @@ interface AgentNodeProps extends NodeProps<WorkflowNode> {
 
 export default function AgentNode({ id, data, selected, onAddChild }: AgentNodeProps) {
   const color = KIND_COLORS[data.kind] ?? '#b1490f';
+  const done = data.done === true;
 
   return (
     <div
-      className="agent-node"
+      className={`agent-node${done ? ' agent-node-done' : ''}`}
       style={{
         borderColor: selected ? color : 'var(--node-border)',
         boxShadow: selected ? `var(--shadow), 0 0 0 3px color-mix(in srgb, ${color} 25%, transparent)` : undefined,
       }}
     >
       <Handle type="target" position={Position.Top} />
-      <div className="agent-node-badge" style={{ background: color }}>
-        {data.kind}
+      <div className="agent-node-badge" style={{ background: done ? '#2f7d32' : color }}>
+        {done ? '✓ done' : data.kind}
       </div>
       <div className="agent-node-label">{data.label}</div>
       {data.description && <div className="agent-node-desc">{data.description}</div>}

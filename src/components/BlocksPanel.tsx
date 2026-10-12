@@ -1,5 +1,6 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { BLOCKS, BLOCK_CATEGORIES, CATEGORY_COLORS, WORKFLOW_TEMPLATES, type BlockDef } from '../lib/blocks';
+import type { CustomTemplate } from '../lib/customTemplates';
 
 interface BlocksPanelProps {
   onInsertBlock: (blockId: string) => void;
@@ -7,6 +8,10 @@ interface BlocksPanelProps {
   onClose: () => void;
   anchorLabel: string | null;
   anchorNext?: string | null;
+  customTemplates: CustomTemplate[];
+  onSaveCustomTemplate: (title: string) => void;
+  onDeleteCustomTemplate: (id: string) => void;
+  onInsertCustomTemplate: (template: CustomTemplate) => void;
 }
 
 function BlockRow({ block, onInsert }: { block: BlockDef; onInsert: () => void }) {
@@ -49,9 +54,20 @@ function BlockRow({ block, onInsert }: { block: BlockDef; onInsert: () => void }
   );
 }
 
-export default function BlocksPanel({ onInsertBlock, onInsertTemplate, onClose, anchorLabel, anchorNext }: BlocksPanelProps) {
+export default function BlocksPanel({
+  onInsertBlock,
+  onInsertTemplate,
+  onClose,
+  anchorLabel,
+  anchorNext,
+  customTemplates,
+  onSaveCustomTemplate,
+  onDeleteCustomTemplate,
+  onInsertCustomTemplate,
+}: BlocksPanelProps) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>('All');
+  const [templateName, setTemplateName] = useState('');
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -75,6 +91,12 @@ export default function BlocksPanel({ onInsertBlock, onInsertTemplate, onClose, 
         t.description.toLowerCase().includes(q),
     );
   }, [query]);
+
+  const filteredCustom = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return customTemplates;
+    return customTemplates.filter((t) => t.title.toLowerCase().includes(q));
+  }, [query, customTemplates]);
 
   return (
     <div className="blocks-panel">
@@ -111,6 +133,49 @@ export default function BlocksPanel({ onInsertBlock, onInsertTemplate, onClose, 
           </div>
         ))}
         {filteredTemplates.length === 0 && <p className="block-blurb">No templates match “{query}”.</p>}
+      </div>
+
+      <div className="blocks-section">
+        <h4>My templates ({customTemplates.length})</h4>
+        <div className="template-save-row">
+          <input
+            className="blocks-search"
+            placeholder="Name this canvas…"
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            aria-label="Custom template name"
+          />
+          <button
+            onClick={() => {
+              onSaveCustomTemplate(templateName);
+              setTemplateName('');
+            }}
+          >
+            Save
+          </button>
+        </div>
+        {filteredCustom.map((t) => (
+          <div key={t.id} className="template-row">
+            <div className="template-title">{t.title}</div>
+            <p className="block-blurb">
+              {t.steps.length} step{t.steps.length === 1 ? '' : 's'} · saved{' '}
+              {new Date(t.createdAt).toLocaleDateString()}
+            </p>
+            <div className="block-tools">
+              <button className="ghost" onClick={() => onDeleteCustomTemplate(t.id)}>
+                Delete
+              </button>
+              <button onClick={() => onInsertCustomTemplate(t)}>Insert {t.steps.length} steps</button>
+            </div>
+          </div>
+        ))}
+        {filteredCustom.length === 0 && (
+          <p className="block-blurb">
+            {customTemplates.length === 0
+              ? 'No saved templates yet — name the current canvas above.'
+              : `No saved templates match “${query}”.`}
+          </p>
+        )}
       </div>
 
       <div className="blocks-filter">

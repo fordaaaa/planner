@@ -20,6 +20,7 @@ interface ToolbarProps {
   onTogglePersist?: () => void;
   orphanCount?: number;
   onLinkOrphans?: () => void;
+  onTidy?: () => void;
 }
 
 function PlusIcon() {
@@ -51,6 +52,15 @@ function LinkIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M6 8a3 3 0 0 0 4.2 0l1.8-1.8a3 3 0 0 0-4.2-4.2L7 2.8M8 6a3 3 0 0 0-4.2 0L2 7.8a3 3 0 0 0 4.2 4.2l.8-.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function TidyIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M2 3.5h10M2 7h7M2 10.5h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="11" cy="7" r="1.6" fill="currentColor" />
     </svg>
   );
 }
@@ -151,7 +161,7 @@ function MarkdownIcon() {
   );
 }
 
-export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen, shellOpen, onToggleShell, pmActive, onTogglePm, blocksOpen, onToggleBlocks, onExportMarkdown, onExportPrompt, onCopyChain, persistOn, onTogglePersist, orphanCount, onLinkOrphans }: ToolbarProps) {
+export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen, shellOpen, onToggleShell, pmActive, onTogglePm, blocksOpen, onToggleBlocks, onExportMarkdown, onExportPrompt, onCopyChain, persistOn, onTogglePersist, orphanCount, onLinkOrphans, onTidy }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -168,6 +178,10 @@ export default function Toolbar({ onAddNode, onExport, onImport, onClear, onTogg
           >
             <LinkIcon />
             <span className="btn-label">{orphanCount ? `Link (${orphanCount})` : 'Linked'}</span>
+          </button>
+          <button onClick={onTidy} title="Stack the flow vertically and fan out subagents">
+            <TidyIcon />
+            <span className="btn-label">Tidy</span>
           </button>
           <button
             onClick={onToggleVoice}

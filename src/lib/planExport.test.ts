@@ -37,4 +37,17 @@ describe('planExport', () => {
   it('marks prompt-less nodes in the markdown plan', () => {
     expect(graphToMarkdown(GRAPH)).toContain('no prompt yet');
   });
+
+  it('marks done steps in every export', () => {
+    const doneGraph: WorkflowGraph = {
+      ...GRAPH,
+      nodes: GRAPH.nodes.map((n) =>
+        n.id === 'start-1' ? { ...n, data: { ...n.data, done: true } } : n,
+      ),
+    };
+    expect(graphToMarkdown(doneGraph)).toContain('## [x] 1.');
+    expect(graphToMarkdown(doneGraph)).toContain('## [ ] 2.');
+    expect(graphToPromptChain(doneGraph)).toContain('PRD for auth [start] (done)');
+    expect(graphToPrompt(doneGraph)).toContain('1 of 1 steps are already marked done');
+  });
 });

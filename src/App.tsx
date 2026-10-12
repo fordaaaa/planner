@@ -12,10 +12,18 @@ import Canvas from './components/Canvas';
 import Toolbar from './components/Toolbar';
 import NodeInspector from './components/NodeInspector';
 import BlocksPanel from './components/BlocksPanel';
+import ProgressStrip from './components/ProgressStrip';
 import ShellPanel, { type ShellResult } from './components/ShellPanel';
 import ConsentBanner from './components/ConsentBanner';
 import { BLOCK_MAP, BLOCKS, TEMPLATE_MAP, WORKFLOW_TEMPLATES } from './lib/blocks';
-import { computeOrphanIds, planInsert, planLinkOrphans } from './lib/graphOps';
+import {
+  captureCustomTemplate,
+  deleteCustomTemplate,
+  listCustomTemplates,
+  saveCustomTemplate,
+  type CustomTemplate,
+} from './lib/customTemplates';
+import { computeOrphanIds, planAutoLayout, planInsert, planLinkOrphans } from './lib/graphOps';
 import { formatStepList, parseShellLine, SHELL_HELP_LINES } from './lib/shell';
 import { downloadMarkdown, downloadPrompt, graphToPromptChain } from './lib/planExport';
 import VoicePanel from './components/VoicePanel';
@@ -60,6 +68,9 @@ function App() {
   // null = user hasn't chosen yet (consent banner shows). Default is session-only:
   // every visit starts fresh unless they opt into browser saving.
   const [persist, setPersist] = useState<PersistPref | null>(() => getPersistPref());
+  // User-saved templates live outside the session/remember consent: they're
+  // library content the user explicitly created, like a bookmark.
+  const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>(() => listCustomTemplates());
   const { toasts, push: pushToast, dismiss: dismissToast } = useToasts();
 
   useEffect(() => {
@@ -258,6 +269,72 @@ function App() {
     [nodes, selectedId, isPristineStarter, pushToast],
   );
 
+  const handleInsertCustomTemplate = useCallback(
+    (template: CustomTemplate, quiet = false) => {
+      const anchor = selectedId ? nodes.find((n) => n.id === selectedId) : null;
+      const bottom = nodes.length
+        ? nodes.reduce((acc, n) => (n.position.y > acc.position.y ? n : acc), nodes[0])
+        : null;
+      // A pristine starter is replaced, not kept as a stray orphan.
+      const dropStarter = !anchor && bottom !== null && nodes.length === 1 && isPristineStarter(bottom);
+      const cursor = dropStarter ? null : (anchor ?? bottom);
+      const base = cursor ? { x: cursor.position.x, y: cursor.position.y + 160 } : { x: 250, y: 50 };
+
+      const newNodes: WorkflowNode[] = template.steps.map((s) => ({
+        id: nextNodeId(),
+        type: 'agent',
+        position: { x: base.x + s.dx, y: base.y + s.dy },
+        data: { label: s.label, kind: s.kind, description: s.description },
+      }));
+      const ids = newNodes.map((n) => n.id);
+      const newEdges: Edge[] = [
+        ...template.edges.map(([from, to], i) => ({ id: `edge-${ids[from]}-${i}`, source: ids[from], target: ids[to] })),
+        ...template.spawnEdges.map(([from, to], i) => ({
+          id: `edge-${ids[from]}-s${i}`,
+          source: ids[from],
+          target: ids[to],
+          className: 'spawn-edge',
+        })),
+      ];
+      if (cursor) {
+        newEdges.unshift({ id: `edge-${ids[0]}-root`, source: cursor.id, target: ids[0] });
+      }
+
+      setNodes((nds) => [...(dropStarter ? [] : nds), ...newNodes]);
+      setEdges((eds) => [...(dropStarter ? [] : eds), ...newEdges]);
+      setSelectedId(ids[ids.length - 1]);
+      if (!quiet) pushToast(`Inserted “${template.title}” (${template.steps.length} steps)`, 'success');
+      return `+ ${template.title} (${template.steps.length} steps)`;
+    },
+    [nodes, selectedId, isPristineStarter, pushToast],
+  );
+
+  const handleSaveCustomTemplate = useCallback(
+    (title: string) => {
+      const name = title.trim();
+      if (!name) {
+        pushToast('Name your template first', 'error');
+        return;
+      }
+      if (!nodes.length) {
+        pushToast('Nothing on the canvas to save', 'error');
+        return;
+      }
+      const template = captureCustomTemplate(name, { nodes, edges }, `custom-${Date.now()}`);
+      setCustomTemplates(saveCustomTemplate(template));
+      pushToast(`Saved “${name}” to your templates`, 'success');
+    },
+    [nodes, edges, pushToast],
+  );
+
+  const handleDeleteCustomTemplate = useCallback(
+    (id: string) => {
+      setCustomTemplates(deleteCustomTemplate(id));
+      pushToast('Template deleted', 'info');
+    },
+    [pushToast],
+  );
+
   const handleNodeDataChange = useCallback((id: string, data: Partial<WorkflowNodeData>) => {
     setNodes((nds) =>
       nds.map((n) => (n.id === id ? { ...n, data: { ...n.data, ...data } } : n)),
@@ -269,6 +346,26 @@ function App() {
     setEdges((eds) => eds.filter((e) => e.source !== id && e.target !== id));
     setSelectedId(null);
   }, []);
+
+  const handleDuplicateNode = useCallback(
+    (id: string) => {
+      const source = nodes.find((n) => n.id === id);
+      if (!source) return;
+      const copyId = nextNodeId();
+      const copy: WorkflowNode = {
+        ...source,
+        id: copyId,
+        position: { x: source.position.x + 40, y: source.position.y + 40 },
+        data: { ...source.data, label: `${source.data.label} (copy)`, done: false },
+      };
+      // No edges copied on purpose — the copy shows the orphan outline and
+      // gets linked with Link-up, so nothing rewires behind your back.
+      setNodes((nds) => [...nds, copy]);
+      setSelectedId(copyId);
+      pushToast('Duplicated — link it with Link-up if needed', 'info');
+    },
+    [nodes, pushToast],
+  );
 
   const handleClear = useCallback(() => setConfirmClear(true), []);
 
@@ -382,9 +479,12 @@ function App() {
     (line: string): ShellResult => {
       const catalogs = {
         blocks: BLOCKS.map((b) => ({ id: b.id, title: b.title })),
-        templates: WORKFLOW_TEMPLATES.map((t) => ({ id: t.id, title: t.title })),
+        templates: [
+          ...WORKFLOW_TEMPLATES.map((t) => ({ id: t.id, title: t.title })),
+          ...customTemplates.map((t) => ({ id: t.id, title: t.title })),
+        ],
       };
-      const action = parseShellLine(line, catalogs);
+      const action = parseShellLine(line, catalogs, nodes);
       switch (action.type) {
         case 'empty':
           return { lines: [] };
@@ -392,13 +492,22 @@ function App() {
           return { lines: [appendStep(action.kind, action.label, '')] };
         case 'insert-block':
           return { lines: [handleInsertBlock(action.blockId, true) ?? `? unknown block`] };
-        case 'insert-template':
-          return { lines: [handleInsertTemplate(action.templateId, true) ?? `? unknown template`] };
+        case 'insert-template': {
+          if (TEMPLATE_MAP[action.templateId]) {
+            return { lines: [handleInsertTemplate(action.templateId, true) ?? `? unknown template`] };
+          }
+          const custom = customTemplates.find((t) => t.id === action.templateId);
+          if (!custom) return { lines: [`? unknown template`] };
+          return { lines: [handleInsertCustomTemplate(custom, true)] };
+        }
         case 'show-block': {
           const block = BLOCK_MAP[action.blockId];
           if (!block) return { lines: [`? unknown block`] };
           return { lines: [`# ${block.title} [${block.kind}]`, '', ...block.prompt.split('\n')] };
         }
+        case 'mark-done':
+          handleNodeDataChange(action.nodeId, { done: action.done });
+          return { lines: [`${action.done ? '✓' : '○'} ${action.label}`] };
         case 'list-steps':
           return { lines: formatStepList(nodes) };
         case 'list-blocks':
@@ -415,7 +524,7 @@ function App() {
           };
       }
     },
-    [appendStep, handleInsertBlock, handleInsertTemplate, nodes],
+    [appendStep, handleInsertBlock, handleInsertTemplate, handleInsertCustomTemplate, handleNodeDataChange, customTemplates, nodes],
   );
 
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
@@ -446,7 +555,18 @@ function App() {
       'success',
     );
   }, [nodes, edges, pushToast]);
+
+  const handleTidy = useCallback(() => {
+    if (nodes.length < 2) {
+      pushToast('Nothing to tidy yet', 'info');
+      return;
+    }
+    setNodes(planAutoLayout(nodes, edges));
+    pushToast(`Tidied ${nodes.length} steps`, 'success');
+  }, [nodes, edges, pushToast]);
   const showOnboarding = nodes.length === 1 && edges.length === 0 && !voiceOpen;
+
+  const doneCount = nodes.filter((n) => n.data.done === true).length;
 
   // Keyboard shortcuts: Delete removes the selected node, Escape closes
   // voice-first then deselects. Ignored while typing in a field.
@@ -463,11 +583,14 @@ function App() {
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
         e.preventDefault();
         handleDeleteNode(selectedId);
+      } else if ((e.key === 'd' || e.key === 'D') && selectedId && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        handleDuplicateNode(selectedId);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedId, voiceOpen, shellOpen, handleDeleteNode]);
+  }, [selectedId, voiceOpen, shellOpen, handleDeleteNode, handleDuplicateNode]);
 
   return (
     <div className="app">
@@ -489,6 +612,7 @@ function App() {
         onCopyChain={handleCopyChain}
         orphanCount={orphanIds.size}
         onLinkOrphans={handleLinkOrphans}
+        onTidy={handleTidy}
         persistOn={persist === 'remember'}
         onTogglePersist={handleTogglePersist}
       />
@@ -507,6 +631,10 @@ function App() {
             onClose={() => setBlocksOpen(false)}
             anchorLabel={selectedNode?.data.label ?? null}
             anchorNext={anchorNext}
+            customTemplates={customTemplates}
+            onSaveCustomTemplate={handleSaveCustomTemplate}
+            onDeleteCustomTemplate={handleDeleteCustomTemplate}
+            onInsertCustomTemplate={(t) => handleInsertCustomTemplate(t)}
           />
         )}
         <Canvas
@@ -520,10 +648,16 @@ function App() {
           onAddChild={addChainedNode}
         >
           {showOnboarding && <OnboardingHint />}
+          <ProgressStrip done={doneCount} total={nodes.length} />
           {voiceOpen && view === 'canvas' && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}
           {shellOpen && view === 'canvas' && <ShellPanel onRun={handleShell} onClose={() => setShellOpen(false)} />}
         </Canvas>
-        <NodeInspector node={selectedNode} onChange={handleNodeDataChange} onDelete={handleDeleteNode} />
+        <NodeInspector
+          node={selectedNode}
+          onChange={handleNodeDataChange}
+          onDelete={handleDeleteNode}
+          onDuplicate={handleDuplicateNode}
+        />
       </div>
       )}
       {confirmClear && (
