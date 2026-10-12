@@ -1200,6 +1200,34 @@
   overflow-wrap: break-word;
 }
 
+.template-save-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.template-save-row .blocks-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.template-save-row button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.template-save-row button:hover {
+  filter: brightness(1.08);
+}
+
 .block-cat {
   font-size: 11px;
   font-weight: 700;
