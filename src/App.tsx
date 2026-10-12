@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   addEdge,
   applyEdgeChanges,
@@ -15,6 +15,7 @@ import BlocksPanel from './components/BlocksPanel';
 import ShellPanel, { type ShellResult } from './components/ShellPanel';
 import ConsentBanner from './components/ConsentBanner';
 import { BLOCK_MAP, BLOCKS, TEMPLATE_MAP, WORKFLOW_TEMPLATES } from './lib/blocks';
+import { computeOrphanIds, planInsert, planLinkOrphans } from './lib/graphOps';
 import { formatStepList, parseShellLine, SHELL_HELP_LINES } from './lib/shell';
 import { downloadMarkdown, downloadPrompt, graphToPromptChain } from './lib/planExport';
 import VoicePanel from './components/VoicePanel';
@@ -91,34 +92,6 @@ function App() {
     [],
   );
 
-  const addChainedNode = useCallback((parentId: string | null) => {
-    const id = nextNodeId();
-
-    setNodes((nds) => {
-      const parent = parentId ? nds.find((n) => n.id === parentId) : null;
-      const position = parent
-        ? { x: parent.position.x, y: parent.position.y + 160 }
-        : { x: 100 + Math.random() * 300, y: 100 + Math.random() * 300 };
-      const newNode: WorkflowNode = {
-        id,
-        type: 'agent',
-        position,
-        data: { label: 'New step', kind: 'agent', description: '' },
-      };
-      return [...nds, newNode];
-    });
-
-    if (parentId) {
-      setEdges((eds) => [...eds, { id: `edge-${id}`, source: parentId, target: id }]);
-    }
-
-    setSelectedId(id);
-  }, []);
-
-  const handleAddNode = useCallback(() => {
-    addChainedNode(selectedId);
-  }, [addChainedNode, selectedId]);
-
   const isPristineStarter = useCallback(
     (n: WorkflowNode) =>
       nodes.length === 1 && n.id === nodes[0]?.id && n.data.label === 'Start' && !n.data.description,
@@ -126,16 +99,17 @@ function App() {
   );
 
   /**
-   * Append a step after the selection (or the lowest node). Returns a short
-   * confirmation line for shell output. Reuses a pristine Start node for
-   * start-kind steps instead of duplicating it.
+   * Append a step after the selection (or the lowest node), splicing BETWEEN
+   * anchor and successor when the anchor already flows onward. Returns a
+   * short confirmation line for shell output. Reuses a pristine Start node
+   * for start-kind steps instead of duplicating it.
    */
   const appendStep = useCallback(
-    (kind: WorkflowNodeData['kind'], label: string, description: string): string => {
-      const anchor = selectedId ? nodes.find((n) => n.id === selectedId) : null;
+    (kind: WorkflowNodeData['kind'], label: string, description: string, anchorOverride?: string | null): string => {
+      const anchorId = anchorOverride !== undefined ? anchorOverride : selectedId;
       const bottom = nodes.reduce((acc, n) => (n.position.y > acc.position.y ? n : acc), nodes[0]);
 
-      if (kind === 'start' && bottom && isPristineStarter(bottom) && !anchor) {
+      if (kind === 'start' && anchorId == null && bottom && isPristineStarter(bottom)) {
         setNodes((nds) =>
           nds.map((n) =>
             n.id === bottom.id ? { ...n, data: { ...n.data, label, kind, description } } : n,
@@ -145,36 +119,56 @@ function App() {
         return `~ applied to Start as [${kind}] ${label}`;
       }
 
-      const parent = anchor ?? bottom ?? null;
+      const plan = planInsert(nodes, edges, anchorId, kind);
       const id = nextNodeId();
-      const position = parent
-        ? kind === 'subagent'
-          ? { x: parent.position.x + 220, y: parent.position.y + 90 }
-          : { x: parent.position.x, y: parent.position.y + 160 }
-        : { x: 250, y: 50 };
       const newNode: WorkflowNode = {
         id,
         type: 'agent',
-        position,
+        position: plan.position,
         data: { label, kind, description },
       };
       setNodes((nds) => [...nds, newNode]);
-      if (parent) {
-        setEdges((eds) => [
-          ...eds,
-          {
-            id: `edge-${id}`,
-            source: parent.id,
-            target: id,
-            className: kind === 'subagent' ? 'spawn-edge' : undefined,
-          },
-        ]);
-      }
+      setEdges((eds) => {
+        let out = plan.removedEdgeId ? eds.filter((e) => e.id !== plan.removedEdgeId) : eds;
+        if (plan.anchorId) {
+          out = [
+            ...out,
+            {
+              id: `edge-${id}`,
+              source: plan.anchorId,
+              target: id,
+              className: plan.branch ? 'spawn-edge' : undefined,
+            },
+          ];
+        }
+        if (plan.successor) {
+          out = [
+            ...out,
+            { id: `edge-${id}-next`, source: id, target: plan.successor.id, className: plan.successor.className },
+          ];
+        }
+        return out;
+      });
       setSelectedId(id);
+      if (plan.successor) {
+        const anchorLabel = nodes.find((n) => n.id === plan.anchorId)?.data.label ?? 'step';
+        return `+ [${kind}] ${label} (between ${anchorLabel} and ${plan.successor.label})`;
+      }
       return `+ [${kind}] ${label}`;
     },
-    [nodes, selectedId, isPristineStarter],
+    [nodes, edges, selectedId, isPristineStarter],
   );
+
+  const addChainedNode = useCallback(
+    (parentId: string | null) => {
+      appendStep('agent', 'New step', '', parentId);
+    },
+    [appendStep],
+  );
+
+  const handleAddNode = useCallback(() => {
+    addChainedNode(selectedId);
+  }, [addChainedNode, selectedId]);
 
   const handleInsertBlock = useCallback(
     (blockId: string, quiet = false) => {
@@ -400,6 +394,11 @@ function App() {
           return { lines: [handleInsertBlock(action.blockId, true) ?? `? unknown block`] };
         case 'insert-template':
           return { lines: [handleInsertTemplate(action.templateId, true) ?? `? unknown template`] };
+        case 'show-block': {
+          const block = BLOCK_MAP[action.blockId];
+          if (!block) return { lines: [`? unknown block`] };
+          return { lines: [`# ${block.title} [${block.kind}]`, '', ...block.prompt.split('\n')] };
+        }
         case 'list-steps':
           return { lines: formatStepList(nodes) };
         case 'list-blocks':
@@ -420,6 +419,33 @@ function App() {
   );
 
   const selectedNode = nodes.find((n) => n.id === selectedId) ?? null;
+
+  const orphanIds = useMemo(() => computeOrphanIds(nodes, edges), [nodes, edges]);
+
+  /** First downstream step after the selection, for splice hints. */
+  const anchorNext = useMemo(() => {
+    if (!selectedNode) return null;
+    const targets = edges
+      .filter((e) => e.source === selectedNode.id)
+      .map((e) => nodes.find((n) => n.id === e.target))
+      .filter((n): n is WorkflowNode => Boolean(n))
+      .sort((a, b) => a.position.y - b.position.y);
+    return targets[0]?.data.label ?? null;
+  }, [selectedNode, edges, nodes]);
+
+  const handleLinkOrphans = useCallback(() => {
+    const plan = planLinkOrphans(nodes, edges, nextNodeId);
+    if (!plan.linked) {
+      pushToast('No orphaned steps — everything is connected', 'info');
+      return;
+    }
+    setNodes(plan.nodes);
+    setEdges(plan.edges);
+    pushToast(
+      `Linked ${plan.linked} orphaned step${plan.linked === 1 ? '' : 's'} into the flow`,
+      'success',
+    );
+  }, [nodes, edges, pushToast]);
   const showOnboarding = nodes.length === 1 && edges.length === 0 && !voiceOpen;
 
   // Keyboard shortcuts: Delete removes the selected node, Escape closes
@@ -461,6 +487,8 @@ function App() {
         onExportMarkdown={handleExportMarkdown}
         onExportPrompt={handleExportPrompt}
         onCopyChain={handleCopyChain}
+        orphanCount={orphanIds.size}
+        onLinkOrphans={handleLinkOrphans}
         persistOn={persist === 'remember'}
         onTogglePersist={handleTogglePersist}
       />
@@ -478,11 +506,13 @@ function App() {
             onInsertTemplate={handleInsertTemplate}
             onClose={() => setBlocksOpen(false)}
             anchorLabel={selectedNode?.data.label ?? null}
+            anchorNext={anchorNext}
           />
         )}
         <Canvas
           nodes={nodes}
           edges={edges}
+          orphanIds={orphanIds}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}

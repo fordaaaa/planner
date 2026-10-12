@@ -18,6 +18,8 @@ interface ToolbarProps {
   onCopyChain?: () => void;
   persistOn?: boolean;
   onTogglePersist?: () => void;
+  orphanCount?: number;
+  onLinkOrphans?: () => void;
 }
 
 function PlusIcon() {
@@ -41,6 +43,14 @@ function TerminalIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
       <path d="M2.5 4.5 5.5 7l-3 2.5M7 10.5h4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M6 8a3 3 0 0 0 4.2 0l1.8-1.8a3 3 0 0 0-4.2-4.2L7 2.8M8 6a3 3 0 0 0-4.2 0L2 7.8a3 3 0 0 0 4.2 4.2l.8-.8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   );
 }
@@ -141,7 +151,7 @@ function MarkdownIcon() {
   );
 }
 
-export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen, shellOpen, onToggleShell, pmActive, onTogglePm, blocksOpen, onToggleBlocks, onExportMarkdown, onExportPrompt, onCopyChain, persistOn, onTogglePersist }: ToolbarProps) {
+export default function Toolbar({ onAddNode, onExport, onImport, onClear, onToggleVoice, voiceOpen, shellOpen, onToggleShell, pmActive, onTogglePm, blocksOpen, onToggleBlocks, onExportMarkdown, onExportPrompt, onCopyChain, persistOn, onTogglePersist, orphanCount, onLinkOrphans }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -151,6 +161,13 @@ export default function Toolbar({ onAddNode, onExport, onImport, onClear, onTogg
           <button onClick={onAddNode} title="Add a blank step after the selection">
             <PlusIcon />
             <span className="btn-label">Add node</span>
+          </button>
+          <button
+            onClick={onLinkOrphans}
+            title={orphanCount ? `Chain ${orphanCount} unconnected step${orphanCount === 1 ? '' : 's'} into the flow` : 'Every step is connected'}
+          >
+            <LinkIcon />
+            <span className="btn-label">{orphanCount ? `Link (${orphanCount})` : 'Linked'}</span>
           </button>
           <button
             onClick={onToggleVoice}

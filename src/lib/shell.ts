@@ -20,6 +20,7 @@ export type ShellAction =
   | { type: 'add-step'; kind: ShellStepKind; label: string }
   | { type: 'insert-block'; blockId: string }
   | { type: 'insert-template'; templateId: string }
+  | { type: 'show-block'; blockId: string }
   | { type: 'list-steps' }
   | { type: 'list-blocks' }
   | { type: 'list-templates' }
@@ -89,6 +90,13 @@ export function parseShellLine(line: string, catalogs: ShellCatalogs): ShellActi
         }
         return { type: 'insert-template', templateId: id };
       }
+    case 'show':
+      if (!arg) return { type: 'unknown', input: line, hint: 'usage: show <block> — try `ls blocks`' };
+      {
+        const id = resolveCatalogId(arg, catalogs.blocks);
+        if (!id) return { type: 'unknown', input: line, hint: `no unique block matches "${arg}" — try \`ls blocks\`` };
+        return { type: 'show-block', blockId: id };
+      }
     case 'ls':
     case 'list': {
       const what = arg.toLowerCase();
@@ -110,6 +118,7 @@ export function parseShellLine(line: string, catalogs: ShellCatalogs): ShellActi
 export const SHELL_HELP_LINES: string[] = [
   'steps:  start|agent|tool|decision|question|subagent|end <label>   (q = question)',
   'blocks: block <name>        insert a pre-filled prompt block',
+  '        show <name>         print a block\'s full prompt here',
   '        template <name>     insert a whole workflow template',
   '        ls [steps|blocks|templates]',
   '        clear               wipe this terminal (canvas untouched)',

@@ -84,6 +84,22 @@ Rules: no fixes yet, no guessing without a check. End with: confirmed repro (yes
 End with a table: item | risk | migration | rollback | owner. The harden steps that follow must not expand this scope.`,
   },
   {
+    id: 'tour',
+    title: 'Tour — Learn This Codebase',
+    category: 'Spec & Plan',
+    kind: 'agent',
+    label: 'Tour [area]',
+    blurb: 'Onboarding map from the code itself: modules, conventions, gotchas.',
+    prompt: `Teach me [area of this codebase] like I'm onboarding tomorrow. Read the code — don't recite the README.
+
+1. Map it: entry points, key modules table (purpose / exports / depends-on), data flow in 5 lines, where config and secrets come from.
+2. Conventions that MATTER here (naming, error handling, patterns a newcomer will break) with file:line examples.
+3. Gotchas: the three things that will surprise me (global state, ordering assumptions, magic env vars).
+4. Give me a first task: one small, safe change touching the area end-to-end so I can prove I get it.
+
+Short + specific. If something's dead or contradictory, flag it — don't document fiction.`,
+  },
+  {
     id: 'prd',
     title: 'PRD — Problem Framer',
     category: 'Spec & Plan',
@@ -107,6 +123,38 @@ Interview me first (one round, all questions at once):
 
 Then write SPEC.md with: Problem, Evidence, Users (+ Not-for), Hypothesis, Success metrics (metric/target/how-measured), Scope (MVP + Out of scope), Delivery milestones (business outcomes, status pending), Open questions, Risks.
 End with: validation status (problem validated|assumption, users concrete|generic, metrics defined|TBD) + suggested next step: plan from this SPEC.`,
+  },
+  {
+    id: 'stack',
+    title: 'Stack — Pick It Once',
+    category: 'Spec & Plan',
+    kind: 'decision',
+    label: 'Stack for [app]',
+    blurb: 'One boring-unless-required recommendation with costs and 10x plan.',
+    prompt: `Recommend the stack for [app idea + constraints: team size, budget, timeline, must-ships].
+
+1. Ask first (one round): expected users/scale, realtime needs?, data shape, hosting budget, team experience, hard constraints (compliance, offline, existing systems).
+2. Recommend ONE stack: language, framework, DB, auth, hosting, queue/cache if needed — each with a one-line why, sized for v1.
+3. Name what you're EXCLUDING and why (no Kubernetes for a CRUD MVP, etc.).
+4. Risks: what breaks first at 10x scale, and the migration path when it does.
+
+Rules: boring over novel unless novelty is the requirement. End with: stack table + estimated monthly cost at v1 scale + what to revisit after launch.`,
+  },
+  {
+    id: 'bootstrap',
+    title: 'Bootstrap — Safe Home Base',
+    category: 'Spec & Plan',
+    kind: 'agent',
+    label: 'Bootstrap [project]',
+    blurb: 'Project memory, skeleton, and a green check loop before any feature.',
+    prompt: `Set up [project] from SPEC.md so any agent session can build in it safely.
+
+1. Project memory first: interview me briefly, then write the memory file ([CLAUDE.md/AGENTS.md], under 200 lines) — what this project IS, stack + commands (install/test/lint/build/run), conventions to follow, what to NEVER do here. Point at SPEC.md/PLAN.md, don't duplicate them.
+2. Scaffold the skeleton (dirs, entry points, config) per the stack decision.
+3. Prove the check loop FIRST: install deps, then show lint + typecheck + test + build all running green — even if the suite is one placeholder test. An agent that can't verify will declare victory on vibes.
+4. Commit: clean tree, first green run, commands documented.
+
+End with: file tree created, exact commands + output as evidence, what's still placeholder.`,
   },
   {
     id: 'plan',
@@ -143,6 +191,22 @@ Ask at most [3] questions, most important first. For each one:
 
 Rules: batch everything into ONE round — no drip-feeding follow-ups. If I skip a question, record it explicitly as "Assumed: ..." and continue; never silently guess.
 End with: Answers (verbatim) + Assumptions made + What this unblocks next.`,
+  },
+  {
+    id: 'explore',
+    title: 'Explore — Options First',
+    category: 'Spec & Plan',
+    kind: 'agent',
+    label: 'Explore [idea]',
+    blurb: 'Socratic design: approaches with tradeoffs, approved section by section.',
+    prompt: `Don't build [idea] yet — explore it with me first.
+
+1. Ask what I'm really trying to do: goal, who it's for, constraints (time, stack, what already exists).
+2. Propose 2–3 approaches with honest tradeoffs (effort, risk, fit). Mark your recommendation.
+3. Work through the design in short sections — one per round — and wait for my approval on each before continuing.
+4. Record open questions as we go; never invent requirements.
+
+End with a DESIGN.md a builder could plan from: goal, chosen approach + rejected alternatives + why, scope boundaries, open questions. No implementation code, no task breakdowns — those come later.`,
   },
   {
     id: 'research',
@@ -213,6 +277,75 @@ When done, report: test command output as evidence, every file changed, how to t
 
 Common fixes: missing type annotation, optional chaining/null check, interface field, import path/alias, generic constraint, hook order, missing async.
 Report: errors fixed (files), remaining, new (must be zero), lines changed (<5% of file), tests still passing.`,
+  },
+  {
+    id: 'debug',
+    title: 'Debug — Root Cause First',
+    category: 'Build',
+    kind: 'agent',
+    label: 'Debug [symptom]',
+    blurb: '4-phase discipline: no fixes before a stated cause. 3 strikes → redesign.',
+    prompt: `Fix [symptom] with root cause first. Symptom fixes are failure — no guessing, no stacked patches.
+
+Phase 1 — Root cause: read the FULL error/stack trace, reproduce reliably (exact steps; if flaky, gather data, don't guess), check recent changes (git diff/log). For multi-component paths, add temporary logging at EVERY boundary (what enters/exits each layer) to find WHERE it breaks. No fixes until you can state the cause in one sentence.
+Phase 2 — Pattern: find similar WORKING code in this repo, compare line by line, list every difference however small.
+Phase 3 — Hypothesis: one specific theory ("X because Y"), the smallest possible test of it, one variable at a time. Wrong? New hypothesis — never stack fixes.
+Phase 4 — Implement: write a FAILING reproduction test first, one minimal fix at the SOURCE (not the symptom), verify green + suite green.
+
+Stop rules: after 2 failed fixes, return to Phase 1 with the new evidence. After 3, STOP and question the architecture with me — new symptoms in new places means the design is wrong, not the patch. Never: "quick fix for now", bundled changes, skipped tests.`,
+  },
+  {
+    id: 'autopilot',
+    title: 'Autopilot — Ralph Loop',
+    category: 'Build',
+    kind: 'agent',
+    label: 'Autopilot [feature]',
+    blurb: 'Unattended story loop: one story per iteration, files as memory.',
+    prompt: `Turn [feature SPEC] into an unattended build loop. One story per iteration, fresh context each time, files as memory.
+
+Setup:
+1. Break the SPEC into small stories (each fits one session): id, one-line goal, files to touch, acceptance criteria as CHECKABLE assertions, priority (lower = first).
+2. Write progress.md (append-only: date, what shipped, learnings/gotchas). Every story starts unticked (passes: false).
+
+Loop discipline (repeat until all ticked or [10] iterations max):
+1. Pick the highest-priority unticked story — nothing else this iteration.
+2. Implement minimally (TDD), run typecheck + lint + tests.
+3. Green? Commit small, tick passes: true, append learnings to progress.md. Red? Leave unticked, append the failure + what was tried.
+4. STOP and escalate to me if: one story fails 3 iterations, or checks can't run. Never work two stories at once, never tick without green checks, never rewrite progress.md history (append only).
+
+End each iteration with: story id, pass/fail, commit hash or failure note.`,
+  },
+  {
+    id: 'screens',
+    title: 'Screens — From Reference',
+    category: 'Build',
+    kind: 'agent',
+    label: 'Screen [name]',
+    blurb: 'Build UI from an attached reference, not a wordy description.',
+    prompt: `Build the [screen name] screen from SPEC.md. Reference: [attach a screenshot, sketch, or a site whose style you like — show it, don't describe it].
+
+1. Match the reference: layout, spacing, type scale, color mood. Steal proportions, not assets (no hotlinked images, no copied code).
+2. Real data shapes from the SPEC (props/API types) with loading + empty + error states — never a screen that only works with perfect data.
+3. Responsive from the start (mobile → desktop), keyboard reachable, focus visible, contrast sane.
+4. Wire it to [route/state/store] following this codebase's existing patterns.
+
+End with: files changed, how to view it (route + command), states to check manually.`,
+  },
+  {
+    id: 'backend',
+    title: 'Backend — Data + API',
+    category: 'Build',
+    kind: 'agent',
+    label: 'Backend for [feature]',
+    blurb: 'Migration-first model, validated authed routes, integration tests.',
+    prompt: `Build the data layer + API for [feature] from SPEC.md.
+
+1. Data model first: tables/collections, fields + types, relations, constraints — as a real migration, not a sketch. Nothing nullable that shouldn't be; money as decimal/numeric, timestamps with timezone.
+2. API: routes with per-route input validation, auth checks on EVERY route, typed error responses (never stack traces to clients), pagination/limits on list endpoints.
+3. Integrity: transactions where two writes must agree, idempotency on webhooks/payments, indexes for the access patterns (prove the slow one with EXPLAIN).
+4. Tests: integration tests per endpoint (happy + auth-denied + invalid input), migration up/down verified.
+
+End with: schema summary, route table (method/path/auth/input), test output, curl examples to exercise it.`,
   },
   {
     id: 'review',
@@ -397,6 +530,22 @@ Report: files updated, drift fixed (before → after), anything intentionally le
 4. Verdict per risk: BLOCKS launch / SHOULD fix / note — each with file:line or config ref and the smallest check that would clear it.
 
 Not a compliance certification — engineering triage. If the repo has no deployment surface (library, docs-only), say so and audit packaging/release readiness instead.`,
+  },
+  {
+    id: 'pr-finish',
+    title: 'PR Finish — Merge or Ship',
+    category: 'Ship',
+    kind: 'agent',
+    label: 'Finish [branch]',
+    blurb: 'Verify, then decide: merge directly, open a PR, or keep local.',
+    prompt: `Decide how [branch/work] ships: merge, PR, or keep. Verify first, then choose.
+
+1. Verify: full gate green (build, types, lint, tests 80%+, no secrets), diff review (git diff --stat — every file intentional?), commits tell the story (small, descriptive).
+2. Pre-merge checklist: linked issue/ticket, PR description ready (what + why + how verified + screenshots for UI), no TODOs without tickets, docs updated, draft vs ready.
+3. Recommend ONE: MERGE directly (tiny, safe, green) / OPEN PR for review (user-facing, risky, or large) / KEEP local (experiment — don't ship yet), with a one-line rationale.
+4. If PR: write the title + description to paste, suggest reviewers by area if known.
+
+Never merge with red checks or unresolved CRITICAL findings. If anything's missing, list exactly what blocks and stop.`,
   },
   {
     id: 'ship',

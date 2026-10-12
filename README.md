@@ -8,11 +8,11 @@ Visual workflow planner for AI agent runs. Chain prompts into an executable plan
 
 - **Canvas** — drag-and-drop plan graph (`start → agent → subagent/tool/decision/question → end`) with auto-chaining and import/export JSON.
 - **Private by default** — every visit starts a fresh session. Nothing is saved unless you choose “Remember in this browser” (local storage only — no account, no server, nothing leaves your machine). Toggle anytime with the Session/Saved button.
-- **Building blocks** — 21 copy-paste-ready prompt blocks distilled from [ECC](https://github.com/affaan-m/ecc) (Everything Claude Code) and edited to work standalone: triage, release scope, PRD, questions, research-first, plan, architect, TDD build, build fix, fresh-eyes review, security audit, bounty-hunt pentest, silent-failure hunt, verify gate, E2E, coverage gaps, perf pass, refactor, docs, prod audit, ship. One click inserts a step pre-filled with its prompt.
+- **Building blocks** — 30 copy-paste-ready prompt blocks distilled from [ECC](https://github.com/affaan-m/ecc) (Everything Claude Code) and edited to work standalone: triage, codebase tour, release scope, PRD, questions, explore, research-first, stack picker, bootstrap, plan, architect, screens, backend, TDD build, debug, autopilot loop, build fix, fresh-eyes review, security audit, bounty-hunt pentest, silent-failure hunt, verify gate, E2E, coverage gaps, perf pass, refactor, docs, prod audit, PR finish, ship. One click inserts a step pre-filled with its prompt.
 - **Workflow templates** — pre-built chains: spec-plan trio, full ECC feature loop, fix loop, harden & ship. Review steps fork as subagents off the build step.
 - **Export the prompt** — download the whole workflow as one paste-ready `prompt.md`, download the plan as markdown, or copy a numbered step-by-step chain straight into an agent session.
 - **Voice build** — speak (or type) keyword commands (`start … agent … question … subagent … end`) and compile them to a graph.
-- **Shell** — a terminal (`Shell` button) for keyboard-driven building: `agent build the api`, `q which provider?`, `block plan`, `template feature-loop`, `ls`, `help`. Command history with ↑/↓.
+- **Shell** — a terminal (`Shell` button) for keyboard-driven building: `agent build the api`, `q which provider?`, `block plan`, `template feature-loop`, `show review`, `ls`, `help`. Command history with ↑/↓.
 - **Projects / PM** — Plane.so-lite issue tracking with a 6-column kanban the AI can drive via MCP (`npm run pm:serve`, then the Projects button).
 
 ## MCP server

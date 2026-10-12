@@ -38,6 +38,12 @@ describe('parseShellLine', () => {
     });
   });
 
+  it('shows a block prompt without touching the canvas', () => {
+    expect(parseShellLine('show plan', CATALOGS)).toEqual({ type: 'show-block', blockId: 'plan' });
+    const missing = parseShellLine('show', CATALOGS);
+    expect(missing.type).toBe('unknown');
+  });
+
   it('rejects ambiguous or missing names with a hint', () => {
     const amb = parseShellLine('block p', CATALOGS);
     expect(amb.type).toBe('unknown');

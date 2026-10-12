@@ -6,10 +6,24 @@ interface BlocksPanelProps {
   onInsertTemplate: (templateId: string) => void;
   onClose: () => void;
   anchorLabel: string | null;
+  anchorNext?: string | null;
 }
 
 function BlockRow({ block, onInsert }: { block: BlockDef; onInsert: () => void }) {
   const cat = CATEGORY_COLORS[block.category];
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(block.prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // clipboard unavailable — ignore
+    }
+  };
+
   return (
     <div className="block-row" style={{ '--cat': cat } as CSSProperties}>
       <div className="block-row-head">
@@ -18,15 +32,24 @@ function BlockRow({ block, onInsert }: { block: BlockDef; onInsert: () => void }
         <span className="block-kind">{block.kind}</span>
       </div>
       <p className="block-blurb">{block.blurb}</p>
+      {expanded && <pre className="block-preview">{block.prompt}</pre>}
       <div className="block-row-foot">
         <span className="block-cat">{block.category}</span>
-        <button onClick={onInsert}>Add step</button>
+        <div className="block-tools">
+          <button className="ghost" onClick={() => setExpanded((v) => !v)}>
+            {expanded ? 'Hide' : 'Preview'}
+          </button>
+          <button className="ghost" onClick={handleCopy}>
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+          <button onClick={onInsert}>Add step</button>
+        </div>
       </div>
     </div>
   );
 }
 
-export default function BlocksPanel({ onInsertBlock, onInsertTemplate, onClose, anchorLabel }: BlocksPanelProps) {
+export default function BlocksPanel({ onInsertBlock, onInsertTemplate, onClose, anchorLabel, anchorNext }: BlocksPanelProps) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>('All');
 
@@ -59,7 +82,11 @@ export default function BlocksPanel({ onInsertBlock, onInsertTemplate, onClose, 
         <div>
           <h3>Building blocks</h3>
           <p className="blocks-sub">
-            {anchorLabel ? `Inserts after “${anchorLabel}”` : 'Select a node, or inserts at the end'}
+            {anchorLabel
+              ? anchorNext
+                ? `Inserts between “${anchorLabel}” and “${anchorNext}”`
+                : `Inserts after “${anchorLabel}”`
+              : 'Select a node, or inserts at the end'}
           </p>
         </div>
         <button className="blocks-close" onClick={onClose} title="Hide blocks">

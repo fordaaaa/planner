@@ -289,6 +289,12 @@
   animation: edge-flow 0.8s linear infinite;
 }
 
+/* Unconnected steps get an amber dashed outline until linked up. */
+.canvas-wrap .react-flow__node.orphan-node .agent-node {
+  border-style: dashed;
+  border-color: #d97706;
+}
+
 @keyframes edge-flow {
   to {
     stroke-dashoffset: -18;
@@ -1099,6 +1105,41 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.block-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.block-tools button.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text);
+  padding: 6px 8px;
+}
+
+.block-tools button.ghost:hover {
+  border-color: var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
+}
+
+.block-preview {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 0 0 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 
 .block-cat {

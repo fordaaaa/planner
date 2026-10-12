@@ -16,6 +16,7 @@ import AgentNode from './nodes/AgentNode';
 interface CanvasProps {
   nodes: WorkflowNode[];
   edges: Edge[];
+  orphanIds?: Set<string>;
   onNodesChange: OnNodesChange<WorkflowNode>;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -27,6 +28,7 @@ interface CanvasProps {
 export default function Canvas({
   nodes,
   edges,
+  orphanIds,
   onNodesChange,
   onEdgesChange,
   onConnect,
@@ -41,10 +43,19 @@ export default function Canvas({
     [onAddChild],
   );
 
+  const displayNodes = useMemo(() => {
+    if (!orphanIds || orphanIds.size === 0) return nodes;
+    return nodes.map((n) =>
+      orphanIds.has(n.id)
+        ? { ...n, className: [n.className, 'orphan-node'].filter(Boolean).join(' ') }
+        : n,
+    );
+  }, [nodes, orphanIds]);
+
   return (
     <div className="canvas-wrap">
       <ReactFlow
-        nodes={nodes}
+        nodes={displayNodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
