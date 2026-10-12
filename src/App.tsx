@@ -16,7 +16,7 @@ import ProgressStrip from './components/ProgressStrip';
 import ShellPanel, { type ShellResult } from './components/ShellPanel';
 import ConsentBanner from './components/ConsentBanner';
 import { BLOCK_MAP, BLOCKS, TEMPLATE_MAP, WORKFLOW_TEMPLATES } from './lib/blocks';
-import { computeOrphanIds, planInsert, planLinkOrphans } from './lib/graphOps';
+import { computeOrphanIds, planAutoLayout, planInsert, planLinkOrphans } from './lib/graphOps';
 import { formatStepList, parseShellLine, SHELL_HELP_LINES } from './lib/shell';
 import { downloadMarkdown, downloadPrompt, graphToPromptChain } from './lib/planExport';
 import VoicePanel from './components/VoicePanel';
@@ -470,6 +470,15 @@ function App() {
       'success',
     );
   }, [nodes, edges, pushToast]);
+
+  const handleTidy = useCallback(() => {
+    if (nodes.length < 2) {
+      pushToast('Nothing to tidy yet', 'info');
+      return;
+    }
+    setNodes(planAutoLayout(nodes, edges));
+    pushToast(`Tidied ${nodes.length} steps`, 'success');
+  }, [nodes, edges, pushToast]);
   const showOnboarding = nodes.length === 1 && edges.length === 0 && !voiceOpen;
 
   const doneCount = nodes.filter((n) => n.data.done === true).length;
@@ -518,6 +527,7 @@ function App() {
         onCopyChain={handleCopyChain}
         orphanCount={orphanIds.size}
         onLinkOrphans={handleLinkOrphans}
+        onTidy={handleTidy}
         persistOn={persist === 'remember'}
         onTogglePersist={handleTogglePersist}
       />

@@ -131,3 +131,79 @@ export function planLinkOrphans(
 
   return { nodes: updated, edges: newEdges, linked: orphans.length };
 }
+
+const LAYOUT_MAIN_X = 300;
+const LAYOUT_TOP_Y = 50;
+const LAYOUT_BRANCH_DX = 260;
+const LAYOUT_SIBLING_DX = 220;
+const LAYOUT_FORK_DY = 90;
+
+/**
+ * Tidy the canvas without touching edges: main-chain steps stack vertically
+ * in flow order, subagents fan out right of their parent, leftovers stack
+ * below. Pure — returns new nodes, input untouched. Cycle-safe.
+ */
+export function planAutoLayout(nodes: WorkflowNode[], edges: Edge[]): WorkflowNode[] {
+  if (nodes.length < 2) return nodes;
+
+  const incoming = new Map<string, Edge[]>();
+  const outgoing = new Map<string, Edge[]>();
+  for (const e of edges) {
+    if (!outgoing.has(e.source)) outgoing.set(e.source, []);
+    outgoing.get(e.source)!.push(e);
+    if (!incoming.has(e.target)) incoming.set(e.target, []);
+    incoming.get(e.target)!.push(e);
+  }
+  const byYX = (a: WorkflowNode, b: WorkflowNode) =>
+    a.position.y - b.position.y || a.position.x - b.position.x;
+
+  const sources = nodes.filter((n) => !(incoming.get(n.id) ?? []).length).sort(byYX);
+  const seeds = sources.length ? sources : [[...nodes].sort(byYX)[0]];
+
+  // Longest-path depth from sources; visited-guard makes cycles terminate.
+  const depth = new Map<string, number>();
+  const stack: Array<[string, number]> = seeds.map((s) => [s.id, 0]);
+  while (stack.length) {
+    const [id, d] = stack.pop()!;
+    if (d <= (depth.get(id) ?? -1)) continue;
+    depth.set(id, d);
+    for (const e of outgoing.get(id) ?? []) stack.push([e.target, d + 1]);
+  }
+
+  const placed = new Map<string, { x: number; y: number }>();
+  const maxDepth = Math.max(0, ...depth.values());
+
+  // Main (non-subagent) steps first, depth by depth.
+  for (let d = 0; d <= maxDepth; d++) {
+    const group = nodes
+      .filter((n) => depth.get(n.id) === d && n.data.kind !== 'subagent')
+      .sort(byYX);
+    group.forEach((n, i) => {
+      placed.set(n.id, { x: LAYOUT_MAIN_X + i * LAYOUT_SIBLING_DX, y: LAYOUT_TOP_Y + d * MAIN_STEP_HEIGHT });
+    });
+    // Subagents hang off their already-placed parent.
+    const subs = nodes.filter((n) => depth.get(n.id) === d && n.data.kind === 'subagent');
+    const siblings = new Map<string, number>();
+    for (const n of subs) {
+      const parentId = (incoming.get(n.id) ?? [])[0]?.source;
+      const parent = parentId ? placed.get(parentId) : undefined;
+      if (!parent) continue;
+      const idx = siblings.get(parentId!) ?? 0;
+      siblings.set(parentId!, idx + 1);
+      placed.set(n.id, { x: parent.x + LAYOUT_BRANCH_DX + idx * LAYOUT_SIBLING_DX, y: parent.y + LAYOUT_FORK_DY });
+    }
+  }
+
+  // Anything unreachable (disconnected cycles and friends) stacks below.
+  const leftovers = nodes.filter((n) => !placed.has(n.id)).sort(byYX);
+  let tailY = LAYOUT_TOP_Y + maxDepth * MAIN_STEP_HEIGHT;
+  for (const n of leftovers) {
+    tailY += MAIN_STEP_HEIGHT;
+    placed.set(n.id, { x: LAYOUT_MAIN_X, y: tailY });
+  }
+
+  return nodes.map((n) => {
+    const p = placed.get(n.id);
+    return p ? { ...n, position: { ...p } } : n;
+  });
+}

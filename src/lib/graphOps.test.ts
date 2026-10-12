@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Edge } from '@xyflow/react';
 import type { WorkflowNode } from './types';
-import { computeOrphanIds, planInsert, planLinkOrphans } from './graphOps';
+import { computeOrphanIds, planAutoLayout, planInsert, planLinkOrphans } from './graphOps';
 
 function node(id: string, x: number, y: number, label = id): WorkflowNode {
   return {
@@ -92,5 +92,43 @@ describe('planLinkOrphans', () => {
     expect(plan.nodes.find((n) => n.id === 'b')!.position).toEqual({ x: 0, y: 220 });
     expect(plan.edges).toHaveLength(1);
     expect(plan.edges[0]).toMatchObject({ source: 'a', target: 'b' });
+  });
+});
+
+describe('planAutoLayout', () => {
+  it('stacks a chain vertically and fans subagents right', () => {
+    const nodes = [
+      node('sub', 10, 10, 'Sub'),
+      node('end', 900, 900, 'End'),
+      node('start', 500, 500, 'Start'),
+      node('mid', 0, 0, 'Mid'),
+    ];
+    const sub = { ...nodes[0], data: { ...nodes[0].data, kind: 'subagent' as const } };
+    const all = [sub, nodes[1], nodes[2], nodes[3]];
+    const laid = planAutoLayout(all, [
+      edge('e1', 'start', 'mid'),
+      edge('e2', 'mid', 'end'),
+      edge('e3', 'mid', 'sub'),
+    ]);
+    const pos = new Map(laid.map((n) => [n.id, n.position]));
+    expect(pos.get('start')).toEqual({ x: 300, y: 50 });
+    expect(pos.get('mid')).toEqual({ x: 300, y: 210 });
+    expect(pos.get('end')).toEqual({ x: 300, y: 370 });
+    expect(pos.get('sub')).toEqual({ x: 560, y: 300 });
+  });
+
+  it('stacks leftovers below and survives cycles', () => {
+    // a<->b is a cycle so neither is a source; the orphan seeds depth 0.
+    const nodes = [node('a', 0, 0), node('b', 0, 160), node('o', 999, 999)];
+    const laid = planAutoLayout(nodes, [edge('e1', 'a', 'b'), edge('e2', 'b', 'a')]);
+    const pos = new Map(laid.map((n) => [n.id, n.position]));
+    expect(pos.get('o')).toEqual({ x: 300, y: 50 });
+    expect(pos.get('a')).toEqual({ x: 300, y: 210 });
+    expect(pos.get('b')).toEqual({ x: 300, y: 370 });
+  });
+
+  it('leaves a single node alone', () => {
+    const nodes = [node('a', 5, 5)];
+    expect(planAutoLayout(nodes, [])).toEqual(nodes);
   });
 });
