@@ -6,9 +6,10 @@ interface NodeInspectorProps {
   node: WorkflowNode | null;
   onChange: (id: string, data: Partial<WorkflowNodeData>) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
 }
 
-export default function NodeInspector({ node, onChange, onDelete }: NodeInspectorProps) {
+export default function NodeInspector({ node, onChange, onDelete, onDuplicate }: NodeInspectorProps) {
   const [copied, setCopied] = useState(false);
   if (!node) {
     return (
@@ -72,6 +73,7 @@ export default function NodeInspector({ node, onChange, onDelete }: NodeInspecto
 
       <div className="inspector-row">
         <button onClick={handleCopy}>{copied ? 'Copied!' : 'Copy prompt'}</button>
+        <button onClick={() => onDuplicate(node.id)}>Duplicate</button>
       </div>
 
       <label>

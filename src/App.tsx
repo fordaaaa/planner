@@ -270,6 +270,26 @@ function App() {
     setSelectedId(null);
   }, []);
 
+  const handleDuplicateNode = useCallback(
+    (id: string) => {
+      const source = nodes.find((n) => n.id === id);
+      if (!source) return;
+      const copyId = nextNodeId();
+      const copy: WorkflowNode = {
+        ...source,
+        id: copyId,
+        position: { x: source.position.x + 40, y: source.position.y + 40 },
+        data: { ...source.data, label: `${source.data.label} (copy)`, done: false },
+      };
+      // No edges copied on purpose — the copy shows the orphan outline and
+      // gets linked with Link-up, so nothing rewires behind your back.
+      setNodes((nds) => [...nds, copy]);
+      setSelectedId(copyId);
+      pushToast('Duplicated — link it with Link-up if needed', 'info');
+    },
+    [nodes, pushToast],
+  );
+
   const handleClear = useCallback(() => setConfirmClear(true), []);
 
   const handleConfirmClear = useCallback(() => {
@@ -463,11 +483,14 @@ function App() {
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
         e.preventDefault();
         handleDeleteNode(selectedId);
+      } else if ((e.key === 'd' || e.key === 'D') && selectedId && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        handleDuplicateNode(selectedId);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedId, voiceOpen, shellOpen, handleDeleteNode]);
+  }, [selectedId, voiceOpen, shellOpen, handleDeleteNode, handleDuplicateNode]);
 
   return (
     <div className="app">
@@ -523,7 +546,12 @@ function App() {
           {voiceOpen && view === 'canvas' && <VoicePanel onCompile={handleVoiceCompile} onClose={() => setVoiceOpen(false)} />}
           {shellOpen && view === 'canvas' && <ShellPanel onRun={handleShell} onClose={() => setShellOpen(false)} />}
         </Canvas>
-        <NodeInspector node={selectedNode} onChange={handleNodeDataChange} onDelete={handleDeleteNode} />
+        <NodeInspector
+          node={selectedNode}
+          onChange={handleNodeDataChange}
+          onDelete={handleDeleteNode}
+          onDuplicate={handleDuplicateNode}
+        />
       </div>
       )}
       {confirmClear && (
