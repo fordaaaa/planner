@@ -9,6 +9,7 @@ import {
   type OnNodesChange,
 } from '@xyflow/react';
 import Canvas from './components/Canvas';
+import Sketchpad from './components/Sketchpad';
 import Toolbar from './components/Toolbar';
 import NodeInspector from './components/NodeInspector';
 import BlocksPanel from './components/BlocksPanel';
@@ -59,6 +60,7 @@ function App() {
   const [nodes, setNodes] = useState<WorkflowNode[]>(STARTER_GRAPH.nodes);
   const [edges, setEdges] = useState<Edge[]>(STARTER_GRAPH.edges);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sketchOpen, setSketchOpen] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [shellOpen, setShellOpen] = useState(false);
   const [blocksOpen, setBlocksOpen] = useState(true);
@@ -669,6 +671,8 @@ function App() {
           onCancel={() => setConfirmClear(false)}
         />
       )}
+      <button className="sketch-launch" onClick={() => setSketchOpen(true)}>✎ Sketchpad</button>
+      <Sketchpad open={sketchOpen} onClose={() => setSketchOpen(false)} />
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       {view === 'canvas' && persist === null && (
         <ConsentBanner onSessionOnly={handleConsentSession} onRemember={handleConsentRemember} />
