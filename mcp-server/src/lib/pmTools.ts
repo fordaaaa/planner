@@ -6,7 +6,9 @@ import {
   createIssue,
   createProject,
   getProject,
+  listActivity,
   listProjects,
+  logActivity,
   updateIssue,
 } from './pmStore.js';
 
@@ -221,6 +223,51 @@ export function registerPmTools(server: McpServer): void {
         lines.push(`comments (${issue.comments.length}):`);
         for (const c of issue.comments) lines.push(`  - ${c.author}: ${c.text}`);
         return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
+      } catch (err) {
+        return { content: [{ type: 'text' as const, text: errText(err) }], isError: true };
+      }
+    },
+  );
+
+  server.registerTool(
+    'pm_activity',
+    {
+      title: 'Show recent PM activity',
+      description: 'Lists recent agent activity for a project, newest first.',
+      inputSchema: {
+        project: z.string().min(1).describe('Project slug'),
+        limit: z.number().int().min(1).max(100).optional().describe('Max entries (default 20)'),
+      },
+    },
+    async ({ project, limit }) => {
+      try {
+        const entries = await listActivity(project, limit ?? 20);
+        if (!entries.length) return { content: [{ type: 'text' as const, text: 'No activity yet.' }] };
+        const lines = entries.map(
+          (a) => `${a.at} ${a.actor} ${a.action}${a.issueKey ? ` ${a.issueKey}` : ''} — ${a.detail}`,
+        );
+        return { content: [{ type: 'text' as const, text: lines.join('\n') }] };
+      } catch (err) {
+        return { content: [{ type: 'text' as const, text: errText(err) }], isError: true };
+      }
+    },
+  );
+
+  server.registerTool(
+    'pm_log_activity',
+    {
+      title: 'Log an agent activity note',
+      description: 'Appends a free-form activity note (action "agent_note") to the project activity log. Use for milestones, decisions, or status summaries an agent wants visible on the board.',
+      inputSchema: {
+        project: z.string().min(1).describe('Project slug'),
+        detail: z.string().min(1).describe('Note text, e.g. "Reproduced bug, writing failing test"'),
+        issueKey: z.string().optional().describe('Optional issue key the note relates to, e.g. "PROJ-1"'),
+      },
+    },
+    async ({ project, detail, issueKey }) => {
+      try {
+        const entry = await logActivity(project, { detail, actor: 'agent', issueKey });
+        return { content: [{ type: 'text' as const, text: `Logged activity ${entry.id} on ${project}` }] };
       } catch (err) {
         return { content: [{ type: 'text' as const, text: errText(err) }], isError: true };
       }

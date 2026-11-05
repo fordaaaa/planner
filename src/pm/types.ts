@@ -30,6 +30,15 @@ export interface Issue {
   comments: IssueComment[];
 }
 
+export interface ActivityEntry {
+  id: string;
+  at: string;
+  actor: string;
+  action: 'issue_created' | 'issue_updated' | 'comment_added' | 'agent_note';
+  issueKey?: string;
+  detail: string;
+}
+
 export interface ProjectSummary {
   slug: string;
   name: string;

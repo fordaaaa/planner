@@ -622,3 +622,33 @@
   letter-spacing: 0.08em;
   color: var(--accent);
 }
+
+.pm-activity {
+  margin: 12px 20px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--pm-border, #e2e2e2);
+  border-radius: 8px;
+  background: var(--pm-panel, #fafafa);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.pm-activity-head { font-weight: 600; margin-bottom: 8px; }
+.pm-activity-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pm-activity-item { display: flex; gap: 10px; font-size: 12px; }
+.pm-activity-time { color: var(--pm-muted, #777); white-space: nowrap; }
+.pm-activity-empty, .pm-activity-error { font-size: 12px; color: var(--pm-muted, #777); }
+.pm-activity-action {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pm-muted, #777);
+  min-width: 52px;
+}
+.pm-activity-note { display: flex; gap: 8px; margin-top: 10px; }
+.pm-activity-note input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--pm-border, #e2e2e2);
+  border-radius: 6px;
+  font-size: 12px;
+}

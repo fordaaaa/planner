@@ -24,6 +24,15 @@ export interface Issue {
   comments: Comment[];
 }
 
+export interface ActivityEntry {
+  id: string;
+  at: string;
+  actor: string;
+  action: 'issue_created' | 'issue_updated' | 'comment_added' | 'agent_note';
+  issueKey?: string;
+  detail: string;
+}
+
 export interface Project {
   slug: string;
   name: string;
@@ -33,4 +42,5 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   issues: Issue[];
+  activity?: ActivityEntry[];
 }

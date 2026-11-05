@@ -2,7 +2,32 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import type { Issue, IssuePriority, IssueStatus, Project } from './pmTypes.js';
+import type { ActivityEntry, Issue, IssuePriority, IssueStatus, Project } from './pmTypes.js';
+
+export const MAX_ACTIVITY_ENTRIES = 100;
+
+export interface MutationOptions {
+  actor?: string;
+}
+
+function recordActivity(
+  project: Project,
+  actor: string,
+  action: ActivityEntry['action'],
+  issueKey: string | undefined,
+  detail: string,
+): void {
+  const entry: ActivityEntry = {
+    id: randomUUID(),
+    at: new Date().toISOString(),
+    actor,
+    action,
+    ...(issueKey ? { issueKey } : {}),
+    detail,
+  };
+  const list = [...(project.activity ?? []), entry];
+  project.activity = list.slice(-MAX_ACTIVITY_ENTRIES);
+}
 
 export class ProjectNotFoundError extends Error {}
 export class IssueNotFoundError extends Error {}
@@ -222,7 +247,7 @@ export async function deleteProject(slug: string): Promise<void> {
   });
 }
 
-export async function createIssue(projectSlug: string, input: CreateIssueInput): Promise<Issue> {
+export async function createIssue(projectSlug: string, input: CreateIssueInput, options?: MutationOptions): Promise<Issue> {
   if (!input.title || !input.title.trim()) throw new Error('Issue title is required');
   return withProjectLock(projectSlug, async () => {
     const project = await readProject(projectSlug);
@@ -246,13 +271,14 @@ export async function createIssue(projectSlug: string, input: CreateIssueInput):
     };
     project.issueCounter = counter;
     project.issues.push(issue);
+    recordActivity(project, options?.actor ?? 'agent', 'issue_created', issue.key, `Created ${issue.key}: ${issue.title}`);
     project.updatedAt = now;
     await writeProject(project);
     return issue;
   });
 }
 
-export async function updateIssue(projectSlug: string, key: string, patch: UpdateIssuePatch): Promise<Issue> {
+export async function updateIssue(projectSlug: string, key: string, patch: UpdateIssuePatch, options?: MutationOptions): Promise<Issue> {
   return withProjectLock(projectSlug, async () => {
     const project = await readProject(projectSlug);
     const issue = project.issues.find((i) => i.key === key);
@@ -266,6 +292,16 @@ export async function updateIssue(projectSlug: string, key: string, patch: Updat
     if (patch.parent !== undefined) issue.parent = patch.parent;
     if (patch.order !== undefined) issue.order = patch.order;
     const now = new Date().toISOString();
+    const changed = (Object.keys(patch) as (keyof UpdateIssuePatch)[]).filter(
+      (k) => patch[k] !== undefined,
+    );
+    recordActivity(
+      project,
+      options?.actor ?? 'agent',
+      'issue_updated',
+      issue.key,
+      `Updated ${changed.join(', ') || 'issue'} on ${issue.key}`,
+    );
     issue.updatedAt = now;
     project.updatedAt = now;
     await writeProject(project);
@@ -273,7 +309,7 @@ export async function updateIssue(projectSlug: string, key: string, patch: Updat
   });
 }
 
-export async function addComment(projectSlug: string, key: string, author: string, text: string): Promise<Project['issues'][number]['comments'][number]> {
+export async function addComment(projectSlug: string, key: string, author: string, text: string, options?: MutationOptions): Promise<Project['issues'][number]['comments'][number]> {
   if (!text || !text.trim()) throw new Error('Comment text is required');
   return withProjectLock(projectSlug, async () => {
     const project = await readProject(projectSlug);
@@ -282,9 +318,34 @@ export async function addComment(projectSlug: string, key: string, author: strin
     const now = new Date().toISOString();
     const comment = { id: randomUUID(), author, text, createdAt: now };
     issue.comments.push(comment);
+    recordActivity(project, options?.actor ?? author, 'comment_added', issue.key, `${author}: ${text.slice(0, 120)}`);
     issue.updatedAt = now;
     project.updatedAt = now;
     await writeProject(project);
     return comment;
   });
+}
+
+export interface LogActivityInput {
+  detail: string;
+  actor?: string;
+  issueKey?: string;
+}
+
+export async function logActivity(projectSlug: string, input: LogActivityInput): Promise<ActivityEntry> {
+  const detail = input.detail?.trim();
+  if (!detail) throw new Error('Activity detail is required');
+  return withProjectLock(projectSlug, async () => {
+    const project = await readProject(projectSlug);
+    recordActivity(project, input.actor ?? 'agent', 'agent_note', input.issueKey, detail);
+    project.updatedAt = new Date().toISOString();
+    await writeProject(project);
+    return project.activity![project.activity!.length - 1];
+  });
+}
+
+export async function listActivity(slug: string, limit = 50): Promise<ActivityEntry[]> {
+  const project = await readProject(slug);
+  const list = project.activity ?? [];
+  return [...list].reverse().slice(0, Math.max(0, limit));
 }

@@ -8,6 +8,7 @@ import {
 import type { Issue, IssuePriority, IssueStatus, ProjectFull } from './types';
 import { ISSUE_PRIORITIES, ISSUE_STATUSES, statusLabel } from './types';
 import IssueDrawer from './IssueDrawer';
+import ActivityPanel from './ActivityPanel';
 import './pm.css';
 
 interface BoardViewProps {
@@ -26,6 +27,7 @@ export default function BoardView({ slug, onBack }: BoardViewProps) {
   const [offline, setOffline] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<IssueStatus | null>(null);
+  const [showActivity, setShowActivity] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [createStatus, setCreateStatus] = useState<IssueStatus>('todo');
   const [title, setTitle] = useState('');
@@ -197,7 +199,10 @@ export default function BoardView({ slug, onBack }: BoardViewProps) {
             <h2 className="pm-title">{project ? project.name : slug}</h2>
             {project?.description && <span className="pm-subtitle">{project.description}</span>}
           </div>
-          <div style={{ marginLeft: 'auto' }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <button className="pm-btn" onClick={() => setShowActivity((v) => !v)} aria-pressed={showActivity}>
+              Activity
+            </button>
             <button className="pm-btn-primary" onClick={() => openCreate('todo')} disabled={offline || !project}>
               + New issue
             </button>
@@ -298,6 +303,8 @@ export default function BoardView({ slug, onBack }: BoardViewProps) {
             </div>
           </form>
         )}
+
+        {showActivity && <ActivityPanel slug={slug} />}
 
         {loading ? (
           <p className="pm-empty" style={{ padding: '20px' }}>

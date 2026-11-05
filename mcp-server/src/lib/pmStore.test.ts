@@ -10,6 +10,7 @@ import {
   createProject,
   deleteProject,
   getProject,
+  listActivity,
   listProjects,
   updateIssue,
 } from './pmStore';
@@ -124,5 +125,88 @@ describe('pmStore', () => {
     const parsed = JSON.parse(raw);
     expect(parsed.issueCounter).toBe(N);
     expect(parsed.issues).toHaveLength(N);
+  });
+});
+
+describe('agent activity tracking', () => {
+  it('createIssue records an activity entry with actor, action and issueKey', async () => {
+    await createProject('Act');
+    const issue = await createIssue('Act', { title: 'tracked' });
+    const activity = await listActivity('Act');
+    expect(activity).toHaveLength(1);
+    expect(activity[0].action).toBe('issue_created');
+    expect(activity[0].actor).toBe('agent');
+    expect(activity[0].issueKey).toBe(issue.key);
+    expect(activity[0].at).toBeTruthy();
+    expect(activity[0].id).toBeTruthy();
+  });
+
+  it('accepts a custom actor on mutations', async () => {
+    await createProject('Act');
+    await createIssue('Act', { title: 'by ui' }, { actor: 'ui' });
+    const activity = await listActivity('Act');
+    expect(activity[0].actor).toBe('ui');
+  });
+
+  it('updateIssue records changed fields in detail', async () => {
+    await createProject('Act');
+    const issue = await createIssue('Act', { title: 'tracked' });
+    await updateIssue('Act', issue.key, { status: 'in_progress', priority: 'high' });
+    const activity = await listActivity('Act');
+    const entry = activity.find((a) => a.action === 'issue_updated');
+    expect(entry).toBeTruthy();
+    expect(entry!.issueKey).toBe(issue.key);
+    expect(entry!.detail).toContain('status');
+    expect(entry!.detail).toContain('priority');
+  });
+
+  it('addComment records a comment_added entry', async () => {
+    await createProject('Act');
+    const issue = await createIssue('Act', { title: 'tracked' });
+    await addComment('Act', issue.key, 'agent', 'progress note');
+    const activity = await listActivity('Act');
+    const entry = activity.find((a) => a.action === 'comment_added');
+    expect(entry).toBeTruthy();
+    expect(entry!.actor).toBe('agent');
+    expect(entry!.issueKey).toBe(issue.key);
+    expect(entry!.detail).toContain('progress note');
+  });
+
+  it('listActivity returns newest first and honors limit', async () => {
+    await createProject('Act');
+    const issue = await createIssue('Act', { title: 'one' });
+    await updateIssue('Act', issue.key, { status: 'todo' });
+    await updateIssue('Act', issue.key, { status: 'in_progress' });
+    const all = await listActivity('Act');
+    expect(all.length).toBe(3);
+    expect(Date.parse(all[0].at)).toBeGreaterThanOrEqual(Date.parse(all[all.length - 1].at));
+    const limited = await listActivity('Act', 2);
+    expect(limited).toHaveLength(2);
+  });
+
+  it('activity is persisted on the project file and survives reload', async () => {
+    await createProject('Act');
+    await createIssue('Act', { title: 'persisted' });
+    const raw = await readFile(join(process.env.PLANNER_PROJECTS_DIR!, 'Act.json'), 'utf8');
+    const parsed = JSON.parse(raw);
+    expect(Array.isArray(parsed.activity)).toBe(true);
+    expect(parsed.activity[0].action).toBe('issue_created');
+  });
+
+  it('projects without an activity field still load (backwards compat)', async () => {
+    await createProject('Legacy');
+    const p = await getProject('Legacy');
+    expect(p.activity).toBeUndefined();
+    expect(await listActivity('Legacy')).toEqual([]);
+  });
+
+  it('caps the activity log to the most recent entries', async () => {
+    await createProject('Act');
+    const issue = await createIssue('Act', { title: 'cap me' });
+    for (let i = 0; i < 120; i++) {
+      await updateIssue('Act', issue.key, { order: i + 1 });
+    }
+    const activity = await listActivity('Act', 500);
+    expect(activity.length).toBeLessThanOrEqual(100);
   });
 });

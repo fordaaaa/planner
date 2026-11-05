@@ -1,4 +1,4 @@
-import type { Issue, ProjectFull, ProjectSummary } from './types';
+import type { ActivityEntry, Issue, ProjectFull, ProjectSummary } from './types';
 
 export interface PmApiError extends Error {
   offline?: boolean;
@@ -12,7 +12,7 @@ export function getApiBase(): string {
   } catch {
     // localStorage unavailable (private mode) — fall through to default.
   }
-  return 'http://127.0.0.1:7808';
+  return import.meta.env.VITE_PM_SAME_ORIGIN === 'true' ? '' : 'http://127.0.0.1:7808';
 }
 
 function toPmError(err: unknown, fallback: string): PmApiError {
@@ -118,6 +118,23 @@ export async function addComment(
     `/api/projects/${encodeURIComponent(slug)}/issues/${encodeURIComponent(key)}/comments`,
     { method: 'POST', body: JSON.stringify({ author, text }) },
   );
+}
+
+export async function fetchActivity(slug: string, limit = 20): Promise<ActivityEntry[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  return request<ActivityEntry[]>(`/api/projects/${encodeURIComponent(slug)}/activity?${params}`);
+}
+
+export async function logActivity(
+  slug: string,
+  detail: string,
+  issueKey?: string,
+  actor = 'you',
+): Promise<ActivityEntry> {
+  return request<ActivityEntry>(`/api/projects/${encodeURIComponent(slug)}/activity`, {
+    method: 'POST',
+    body: JSON.stringify({ detail, issueKey, actor }),
+  });
 }
 
 export async function deleteProject(slug: string): Promise<void> {

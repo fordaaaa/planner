@@ -7,6 +7,8 @@ import {
   getProject,
   IssueNotFoundError,
   listProjects,
+  listActivity,
+  logActivity,
   ProjectNotFoundError,
   updateIssue,
 } from './lib/pmStore.js';
@@ -126,6 +128,45 @@ const server = createServer(async (req, res) => {
     if (parts.length >= 3 && parts[0] === 'api' && parts[1] === 'projects') {
       const slug = decodeURIComponent(parts[2]);
 
+      // GET /api/projects/:slug/activity
+      if (parts.length === 4 && parts[3] === 'activity' && method === 'GET') {
+        try {
+          const limitRaw = Number(url.searchParams.get('limit') ?? '50');
+          const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(1, limitRaw), 500) : 50;
+          sendJson(res, 200, await listActivity(slug, limit));
+        } catch (err) {
+          sendJson(res, errorStatus(err), { error: err instanceof Error ? err.message : String(err) });
+        }
+        return;
+      }
+
+      // POST /api/projects/:slug/activity
+      if (parts.length === 4 && parts[3] === 'activity' && method === 'POST') {
+        let body: Record<string, unknown>;
+        try {
+          body = await readBody(req);
+        } catch {
+          sendJson(res, 400, { error: 'Invalid JSON body' });
+          return;
+        }
+        const detail = asStringOrUndefined(body.detail);
+        if (!detail || !detail.trim()) {
+          sendJson(res, 400, { error: 'detail is required' });
+          return;
+        }
+        try {
+          const entry = await logActivity(slug, {
+            detail,
+            actor: asStringOrUndefined(body.actor) ?? 'agent',
+            issueKey: asStringOrUndefined(body.issueKey),
+          });
+          sendJson(res, 201, entry);
+        } catch (err) {
+          sendJson(res, errorStatus(err), { error: err instanceof Error ? err.message : String(err) });
+        }
+        return;
+      }
+
       // /api/projects/:slug
       if (parts.length === 3) {
         if (method === 'GET') {
@@ -165,7 +206,7 @@ const server = createServer(async (req, res) => {
             labels: normalizeLabels(body.labels),
             assignee: asStringOrNull(body.assignee),
             parent: asStringOrNull(body.parent),
-          });
+          }, { actor: asStringOrUndefined(body.actor) });
           sendJson(res, 201, issue);
         } catch (err) {
           sendJson(res, errorStatus(err), { error: err instanceof Error ? err.message : String(err) });
@@ -193,7 +234,7 @@ const server = createServer(async (req, res) => {
           if (body.assignee !== undefined) patch.assignee = asStringOrNull(body.assignee);
           if (body.parent !== undefined) patch.parent = asStringOrNull(body.parent);
           if (body.order !== undefined && typeof body.order === 'number') patch.order = body.order;
-          const issue = await updateIssue(slug, key, patch);
+          const issue = await updateIssue(slug, key, patch, { actor: asStringOrUndefined(body.actor) });
           sendJson(res, 200, issue);
         } catch (err) {
           sendJson(res, errorStatus(err), { error: err instanceof Error ? err.message : String(err) });
@@ -218,7 +259,7 @@ const server = createServer(async (req, res) => {
         }
         const author = asStringOrUndefined(body.author) ?? 'agent';
         try {
-          const comment = await addComment(slug, key, author, text);
+          const comment = await addComment(slug, key, author, text, { actor: asStringOrUndefined(body.actor) ?? author });
           sendJson(res, 201, comment);
         } catch (err) {
           sendJson(res, errorStatus(err), { error: err instanceof Error ? err.message : String(err) });
