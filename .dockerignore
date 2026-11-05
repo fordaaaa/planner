@@ -1,0 +1,9 @@
+node_modules
+**/node_modules
+dist
+mcp-server/dist
+.git
+.github
+.serena
+docker-compose.yml
+*.log

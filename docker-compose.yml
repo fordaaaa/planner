@@ -1,0 +1,32 @@
+# Self-hosted Planner. See README.md "Self-hosting" for usage, persistence and limitations.
+#
+#   docker compose up --build
+#
+# Frontend:        http://localhost:8080
+# PM API (via web proxy, basic auth): http://localhost:8080/api/...
+# PM server direct (loopback only, no auth — never publish publicly): 127.0.0.1:7808
+
+services:
+  planner:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    image: planner:latest
+    ports:
+      # The PM server binds loopback inside the container and is unreachable from
+      # outside; all access goes through the basic-auth /api/ proxy on this port.
+      - "${PLANNER_WEB_PORT:-8080}:8080"
+      # NOTE: do not add a published port for 7808 without basic auth — the PM
+      # server has no authentication of its own.
+    environment:
+      PLANNER_AUTH_USER: ${PLANNER_AUTH_USER:-planner}
+      # If unset, a random password is generated and printed to the logs at startup.
+      PLANNER_AUTH_PASSWORD: ${PLANNER_AUTH_PASSWORD:-}
+      PLANNER_PROJECTS_DIR: /data/projects
+      PLANNER_WORKFLOWS_DIR: /data/workflows
+    volumes:
+      - planner-data:/data
+    restart: unless-stopped
+
+volumes:
+  planner-data:
