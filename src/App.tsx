@@ -10,6 +10,7 @@ import {
 } from '@xyflow/react';
 import Canvas from './components/Canvas';
 import Sketchpad from './components/Sketchpad';
+import { clearSketch } from './lib/sketchStorage';
 import Toolbar from './components/Toolbar';
 import NodeInspector from './components/NodeInspector';
 import BlocksPanel from './components/BlocksPanel';
@@ -444,6 +445,7 @@ function App() {
     setPersistPref(next);
     if (next === 'session') {
       clearSavedGraph();
+      clearSketch();
       pushToast('Session-only — saved copy deleted from this browser', 'info');
     } else {
       saveToLocalStorage({ nodes, edges });
